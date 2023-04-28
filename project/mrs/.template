@@ -13,4 +13,4 @@ Description=ROM(byte): 192K, SRAM(byte): 128K, CHIP PINS: 100, GPIO PORTS: 80.\n
 
 PeripheralVersion=1.5
 CLKSpeed=1
-Target Path=obj/ch_car(ver3).hex
+Target Path=obj\ch_car_ver3.hex

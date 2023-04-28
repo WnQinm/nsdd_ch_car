@@ -48,16 +48,18 @@ int main (void)
     // 此处编写用户代码 例如外设初始化代码等
     ips200_init(IPS200_TYPE_PARALLEL8);
 
-    timer_init(TIM_7, TIMER_MS);//计时器，查看程序运行时间
+//    timer_init(TIM_7, TIMER_MS);//计时器，查看程序运行时间
     IMG_pit_init();
-    imu660ra_init();
+    Servo_pit_init();
+
+//    imu660ra_init();
     mt9v03x_init();
 
     motor_init();
     servo_init();
     // 此处编写用户代码 例如外设初始化代码等
 
-    motor_control(800, 800);
+    motor_control(1000, 1000);
 
 
     while(1)

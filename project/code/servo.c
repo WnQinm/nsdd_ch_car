@@ -25,7 +25,7 @@ float Angle_ki=0;
 float Angle_kd=0;
 float Gro3_p = 0.3;   //陀螺仪的乘积系数//0.19     0.75    0.75    0.585 0.545    0.445   0.415     0.4    0.31    0.15       0.21      0.35       0.3
 uint8 Number=0;       //内外环计数器
-float Angle=0;          //目标角度
+float Angle=90;          //目标角度
 float Angle_last=0;
 int ServoDuty_Last=0;
 int Servoduty=0;        //外环偏差
@@ -39,66 +39,40 @@ void servo_init(void)
 // 舵机控制
 void servo_control()
 {
-    ips200_show_string(0, 220, "Angle:");
-    ips200_show_float(70, 220, Angle, 3, 3);
-    if(Angle<-15) Angle=-15;
-    if(Angle>15) Angle=15;
-    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(-Angle+90));
+    AngleErr();
+    if(Angle<75) Angle=75;
+    if(Angle>105) Angle=105;
+    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(Angle));
 
-}
-
-// 最小二乘法线性回归
-int regression(int startline,int endline)
-{
-
-  int i=0,SumX=0,SumY=0,SumLines = 0;
-  float SumUp=0,SumDown=0,avrX=0,avrY=0,B;
-  SumLines=endline-startline;   // startline 为开始行， //endline 结束行 //SumLines
-
-  for(i=startline;i<endline;i++)
-  {
-    SumX+=i;
-    SumY+=centerline[i];
-  }
-  avrX=SumX/SumLines;     //X的平均值
-  avrY=SumY/SumLines;     //Y的平均值
-  SumUp=0;
-  SumDown=0;
-  for(i=startline;i<endline;i++)
-  {
-    SumUp+=(centerline[i]-avrY)*(i-avrX);
-    SumDown+=(i-avrX)*(i-avrX);
-  }
-  if(SumDown==0)
-    B=0;
-  else
-    B=(int)(SumUp/SumDown);
-//    A=(SumY-B*SumX)/SumLines;  //截距
-    return B;  //返回斜率
 }
 
 //*********以下是目前凑活用能跑的代码*************
-#define  Kp 0.7
-#define  Kd 0.3
+#define  Kp 30//30
+#define  Kd 0
 
 // 简单pid
 void servo_base_pid()
 {
     int current_err = Angle;
-    static int previous_err = 0;
-    static int sum_err = 0;
+    int Increase;
+    static int last_err = 0;
+    Increase = Kp * (current_err + Kd * (current_err - last_err))/100;
 
-    sum_err += current_err;
+    last_err = current_err;
 
-    Angle = Kp * current_err + Kd * (current_err - previous_err);
+    Angle = 90 - Increase;
 
-    previous_err = current_err;
+    ips200_show_string(0, 220, "Angle:");
+    ips200_show_float(70, 220, Angle, 3, 3);
+
+
 }
 
 // 计算偏差，通过某三行计算，当车速变快时将无法适用
-#define aimLine MT9V03X_H-20
+#define aimLine 20
 void AngleErr()
 {
+    ips200_draw_line(0, MT9V03X_H-1-aimLine, MT9V03X_W, MT9V03X_H-1-aimLine, RGB565_BROWN);
 //    for(int i = 0; i < 30; i++) {
 //        weightSum += weightbase[i];
 //        lineSum += weightbase[i] * centerline[MT9V03X_H-30+i];
@@ -116,13 +90,13 @@ void AngleErr()
 // 低级转向
     Angle = ((  5 * centerline[aimLine] +
                 3 * centerline[aimLine + 1] +
-                2 * centerline[aimLine + 2]) / (10.000f)) - 70;
+                2 * centerline[aimLine + 2]) / (10.000f)) - MT9V03X_W/2;
 //    midline_fff = midline_ff;
 //    midline_ff  = midline_f;
 //    midline_f = Angle;
 //    Angle = midline_fff * 0.50f + midline_ff * 0.30f + midline_f * 0.20f;
 
-//    Angle = Angle * 0.80f - regression(MT9V03X_H - 10, MT9V03X_H) * 0.20f;
+    Angle = Angle * 0.80f - regression(MT9V03X_H - 41, MT9V03X_H-21) * 0.20f;
     servo_base_pid();
 }
 

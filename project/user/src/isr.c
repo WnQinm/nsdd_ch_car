@@ -32,8 +32,9 @@
 * 日期                                      作者                             备注
 * 2022-09-15        大W            first version
 ********************************************************************************************************************/
-
+#include "imgproc.h"
 #include "isr.h"
+
 void NMI_Handler(void)       __attribute__((interrupt("WCH-Interrupt-fast")));
 void HardFault_Handler(void) __attribute__((interrupt("WCH-Interrupt-fast")));
 
@@ -320,6 +321,7 @@ void TIM5_IRQHandler(void)
     }
 }
 
+
 void TIM6_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET)
@@ -329,24 +331,48 @@ void TIM6_IRQHandler(void)
        // 开始计时
 //       timer_start(TIM_7);
 
+
        if(mt9v03x_finish_flag)
        {
-           sobelAutoThreshold(mt9v03x_image, img_sobel);
+//           BinThreshold(mt9v03x_image);
 //           ImageFilter(img_sobel);
 //           ImagePerspective_Init(img_sobel, img_sobel_pers);
-           image_scan(img_sobel);
-           AngleControl();
-//           ips200_clear();
-//           camera_send_image(DEBUG_UART_INDEX, (const uint8 *)img_sobel, MT9V03X_IMAGE_SIZE);
-           ips200_displayimage03x((const uint8 *)img_sobel, MT9V03X_W, MT9V03X_H);
-           Draw_Side();
+//           image_scan(img_sobel);
+
+           turn_to_bin(mt9v03x_image, MT9V03X_W, MT9V03X_H);
+           ImagePerspective_Init(bin_image, perspectiveImage);
+           ips200_displayimage03x((const uint8 *)perspectiveImage, MT9V03X_W, MT9V03X_H);
+           BinThreshold(perspectiveImage);
+           FindLineFromOneSide(JudgeLeftorRight());
+//           printf("centerline_start\n");
+//           for(int i=0;i<MT9V03X_H;i++){
+//               printf("%d %d\n",i, rightline[i]-leftline[i]);
+//           }
+//           printf("centerline_end\n");
+           printf("leftline_start\n");
+           for(int i=0;i<MT9V03X_H;i++){
+               printf("%d %d\n",i, leftline[i]);
+           }
+           printf("leftline_end\n");
+           printf("rightline_start\n");
+           for(int i=0;i<MT9V03X_H;i++){
+               printf("%d %d\n",i, rightline[i]);
+           }
+           printf("rightline_end\n");
+           ips200_draw_line(0, MT9V03X_H-1, MT9V03X_W, MT9V03X_H-1, RGB565_BROWN);
+           ips200_draw_line(MT9V03X_W/2, 0, MT9V03X_W/2, MT9V03X_H-1, RGB565_BROWN);
+           ips200_draw_line(0, MT9V03X_H-10, MT9V03X_W, MT9V03X_H-10, RGB565_BROWN);
+           ips200_draw_line(0, MT9V03X_H-50, MT9V03X_W, MT9V03X_H-50, RGB565_BROWN);
+//           camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
+//           Draw_Side();
+//           ips200_show_rgb565_image(135, 200, (const uint16*)Ayaka, 100, 100, 100, 100, 0);
            mt9v03x_finish_flag = 0;
        }
 
        // 结束计时
 //       timer_stop(TIM_7);
-//       ips200_show_string(0, 200, "time:");
-//       ips200_show_int(60, 200, timer_get(TIM_7), 8);
+//       ips200_show_string(0, 240, "time:");
+//       ips200_show_int(60, 240, timer_get(TIM_7), 8);
 //       timer_clear(TIM_7);
 
     }
@@ -358,7 +384,7 @@ void TIM7_IRQHandler(void)
     {
        TIM_ClearITPendingBit(TIM7, TIM_IT_Update );
 
-
+       servo_control();
     }
 }
 
