@@ -7,8 +7,8 @@
 
 #include "imgproc.h"
 
-uint8 rightline[MT9V03X_H], leftline[MT9V03X_H];//rightline：右线，leftline：左线
-uint8 road_width[MT9V03X_H], centerline[MT9V03X_H];//road_width：道路宽度，centerline：道路中线
+int16 rightline[MT9V03X_H], leftline[MT9V03X_H];//rightline：右线，leftline：左线
+int16 road_width[MT9V03X_H], centerline[MT9V03X_H];//road_width：道路宽度，centerline：道路中线
 uint8 bin_image[MT9V03X_H][MT9V03X_W];//图像数组
 uint8 perspectiveImage[MT9V03X_H][MT9V03X_W];//逆透视之后数组
 
@@ -524,7 +524,7 @@ void Image_Handle()
         }
         if (Right_Add_Flag[i])                                  //右侧需要补线
         {
-            if (i >= 55)                                                    //前三行补线不算
+            if (i >= ROW-5)                                                    //前三行补线不算
             {
                 if (!Right_Add_Start)
                 {
@@ -562,6 +562,17 @@ void Image_Handle()
             }
         }
         /*************************** 第一轮补线结束 ***************************/
+        Road_Width_Add[i] = Right_Add_Line[i] - Left_Add_Line[i];   // 重新计算赛道宽度
+        if ((Left_Add_Flag[i] && Right_Add_Flag[i]) || (!Left_Add_Flag[i] && !Right_Add_Flag[i]))
+            centerline[i] = (Right_Add_Line[i] + Left_Add_Line[i]) / 2;   // 计算中线
+        else
+            centerline[i] = centerline[i+2];
+        if (Road_Width_Add[i] < Road_Width_Min)
+            Road_Width_Min = Road_Width_Add[i]; // 更新最小赛道宽度
+        if(Left_Add_Stop && Right_Add_Stop)    //补线结束后又要补线这不补
+             if(Left_Add_Flag[i]||Right_Add_Flag[i])
+                    break;
+        Line_Count = i;
     }
 }
 
