@@ -86,7 +86,6 @@ void Curve3_Fitting(float *Ka, float *Kb, uint8 Start,uint8 End, int16 *Line, in
         *Ka = 1.0*((Line[Start]) - Line[End]) / (Start-End);
         *Kb = 1.0*Line[End] - (*Ka * End);
     }
-
 }
 
 /*-------------------------------------------------------------------------------------------------------------------

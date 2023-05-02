@@ -12,6 +12,11 @@
 #include "servo.h"
 #include "mathh.h"
 
+// ***逆透视用，开始***
+#define RESULT_ROW 120//结果图行列
+#define RESULT_COL 188
+// ***逆透视用，结束***
+
 #define MIDVALUE    46   //  处理前40行 （ ROW-1+ROW-1-20）/2=46
 #define white 255
 #define black 0

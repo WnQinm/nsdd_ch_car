@@ -102,7 +102,9 @@ uint8 otsuThreshold(uint8 *image, uint16 col, uint16 row)
    return Threshold;
 }
 
-
+/*
+ * 图像二值化函数（大津法），使用后直接调用bin_image使用
+ */
 void turn_to_bin(uint8 raw_image[MT9V03X_H][MT9V03X_W], uint8 image_w, uint8 image_h)
 {
     uint8 i,j;
@@ -118,6 +120,7 @@ void turn_to_bin(uint8 raw_image[MT9V03X_H][MT9V03X_W], uint8 image_w, uint8 ima
 }
 
 // 种子生成法生成左右边线
+// TODO:index写法异常，可能需要调整
 void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
 {
     //***********种子生成法**************
@@ -133,7 +136,7 @@ void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
     for(int i=mid-1;0<i;i--){
         if(i==1){
             leftline[0] = 0;
-//            isLeftLineDiuXian[0]=1;
+            Left_Add_Flag[0]  = 1;// 最下一行左侧丢线
             break;
         }else if(abs(bin_image[MT9V03X_H-1][i]-bin_image[MT9V03X_H-1][i-1])==white){
             leftline[0]=i;
@@ -143,7 +146,7 @@ void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
     for(int j=mid;j<MT9V03X_W-1;j++){
         if(j==MT9V03X_W-2){
             rightline[0] = MT9V03X_W-1;
-//            isRightLineDiuXian[0]=1;
+            Right_Add_Flag[0] = 1;// 最下一行右侧丢线
             break;
         }else if(abs(bin_image[MT9V03X_H-1][j]-bin_image[MT9V03X_H-1][j+1])==white){
             rightline[0]=j;
@@ -174,7 +177,7 @@ void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
         }
         //处理丢线，如果丢线，则说明面前是环岛或者十字路口
         if(isLeftDiuXian==0){
-//            isLeftLineDiuXian[next1]=1;
+            Left_Add_Flag[next1] = 1;
             leftline[next1]=0;
         }
 
@@ -193,15 +196,9 @@ void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
         }
         //处理丢线，如果丢线，则说明面前是环岛或者十字路口
         if(isRightDiuXian==0){
-//            isRightLineDiuXian[next1]=1;
+            Right_Add_Flag[next1] = 1;
             rightline[next1]=MT9V03X_W-1;
         }
-
-        //这里应该有道路状况识别，但我不会写/doge
-        //
-        //1145141919810
-        //
-        //道路识别结束
     }
     //***********种子生成法结束**************
 }
@@ -261,9 +258,9 @@ void Draw_Side()
     }
 }
 
-#define RESULT_ROW 120//结果图行列
-#define RESULT_COL 188
-
+/*
+ * 逆透视函数，代码块第一行的矩阵需要实际根据摄像头调整，用现成的应用
+ */
 void ImagePerspective_Init(uint8 BinImage[MT9V03X_H][MT9V03X_W], uint8 ResultImage[MT9V03X_H][MT9V03X_W])
 {
     float change_un_Mat[3][3] ={{-0.261484,0.238685,-13.690022},{0.002599,0.029139,-17.574438},{0.000044,0.002474,-0.410734}};
@@ -283,10 +280,8 @@ void ImagePerspective_Init(uint8 BinImage[MT9V03X_H][MT9V03X_W], uint8 ResultIma
             else {
                 ResultImage[j][i] = black;
             }
-
         }
     }
-
 }
 
 uint8 JudgeLeftorRight(){
@@ -335,7 +330,7 @@ void Line_Repair(uint8 Start, uint8 Stop, int16 *Line_Add, int16 Mode)
         for (i = Start; i >= Stop+2; i -= 2)
         {
             Line_Add[i] = Limit_Protect(Right_Add_Line[i] - Road_Width_Add[i+2], 1, COL-1); //Right_Add_Line与Right_Line数值其实应该是一样的，右边界减去赛道宽度等于左边界
-            Road_Width_Add[i] = Road_Width_Add[i+2];                                                                                //这样补出来的线应该会比直接斜率补出来稳一点
+            Road_Width_Add[i] = Road_Width_Add[i+2];                                        //这样补出来的线应该会比直接斜率补出来稳一点
         }
     }
     else if ((Mode == 2) && (Left_Add_Start <= Stop) && Start <= 53)    //右边界补线（53行之后）
@@ -343,7 +338,7 @@ void Line_Repair(uint8 Start, uint8 Stop, int16 *Line_Add, int16 Mode)
         for (i = Start; i >= Stop+2; i -= 2)
         {
             Line_Add[i] = Limit_Protect(Left_Add_Line[i] + Road_Width_Add[i+2], 1, COL-1);  //Left_Add_Line与Left_Line数值其实应该是一样的，左边界加上赛道宽度等于左边界
-            Road_Width_Add[i] = Road_Width_Add[i+2];                                                                                //这样补出来的线应该会比直接斜率补出来稳一点
+            Road_Width_Add[i] = Road_Width_Add[i+2];                                        //这样补出来的线应该会比直接斜率补出来稳一点
         }
     }
     else
@@ -366,20 +361,20 @@ void Line_Repair(uint8 Start, uint8 Stop, int16 *Line_Add, int16 Mode)
                     (Right_Add_Stop >= MIDVALUE && Left_Add_Start  <= Right_Add_Stop) || \
                     (Left_Add_Stop  >= MIDVALUE && Right_Add_Start <= Left_Add_Stop))   //只有较少行需要补线，不计算斜率，直接竖直向下补线
             {
-                for (i = Stop-2; i <= 57; )                                                                                 //从停止行向近处的57行开始补线
+                for (i = Stop-2; i <= 57; )                                               //从停止行向近处的57行开始补线
                 {
                     i += 2;
-                    Line_Add[i] = Line_Add[Stop];                                                                           //竖直向下补线，不用计算斜率
+                    Line_Add[i] = Line_Add[Stop];                                         //竖直向下补线，不用计算斜率
                 }
             }
-            else                                                                                                                                    //将起始行和结束行计算斜率补线
+            else                                                                          //将起始行和结束行计算斜率补线
             {
                 Ka = 1.0*(Line_Add[Start] - Line_Add[Stop]) / (Start - Stop);               //两点法算出斜率Ka
-                Kb = 1.0*Line_Add[Start] - (Ka * Start);                                                        //带入起始点，算出常数Kb
-                for (i = Stop+2; i < Start; i += 2)                                                                 //从停止行到起始行
+                Kb = 1.0*Line_Add[Start] - (Ka * Start);                                  //带入起始点，算出常数Kb
+                for (i = Stop+2; i < Start; i += 2)                                         //从停止行到起始行
                 {
-                    res = i * Ka + Kb;                                                                                              //利用Ka,Kb计算丢线行的坐标
-                    Line_Add[i] = Limit_Protect((int32)res, 1, COL-1);                              //判断是否超出图像区域
+                    res = i * Ka + Kb;                                                      //利用Ka,Kb计算丢线行的坐标
+                    Line_Add[i] = Limit_Protect((int32)res, 1, COL-1);                      //判断是否超出图像区域
                 }
             }
         }
@@ -416,24 +411,24 @@ void Fand_Left_Ring(void)
                             {
                                 if(rightline[i] != 93)                                         //右侧55到19行没丢线
                                     if(rightline[i+2] < rightline[i])             //并且远处行的横坐标小于近处行，表示扫描赛道正常
-                                        return ;                                                                //右边界不正常，无法进行后续处理，返回结束
+                                        return ;                                              //右边界不正常，无法进行后续处理，返回结束
                             }
-                            Curve3_Fitting(&Right_Ka, &Right_Kb, 51,31, rightline, 2);                 //拟合右边界的斜率
+                            Curve3_Fitting(&Right_Ka, &Right_Kb, 51,31, rightline, 2);        //拟合右边界的斜率
                             /*需要在线调试并，修改Ka，Kb的范围保证车能识别到圆环*/
-                            if(Right_Ka>=0.3f && Right_Ka <= 0.65f)                                                         //判断拟合的Ka是否在正常范围，表示赛道正常，车身较正
+                            if(Right_Ka>=0.3f && Right_Ka <= 0.65f)                           //判断拟合的Ka是否在正常范围，表示赛道正常，车身较正
                             {
-                                if(Right_Kb >= 30 && Right_Kb <= 65)                                                            //判断拟合的Kb是否在正常范围，表示赛道正常，车身较正
+                                if(Right_Kb >= 30 && Right_Kb <= 65)                          //判断拟合的Kb是否在正常范围，表示赛道正常，车身较正
                                 {
                                     for(int aaaaa = 25; aaaaa <= 57; aaaaa += 2)
                                     {
                                         Is_Right_Line[aaaaa]  = Fit_Point(aaaaa, Right_Ka, Right_Kb);   //将拟合结果放入圆环专属补线数组
                                         if(rightline[aaaaa] <= (Is_Right_Line[aaaaa]+1) && rightline[aaaaa] >= (Is_Right_Line[aaaaa]-1))//拟合结果较好，右边界正常
                                         {
-                                            if(++count_flag == 15)                                                                          //至少15个点拟合没问题
+                                            if(++count_flag == 15)                           //至少15个点拟合没问题
                                             {
-                                                island_flag = 1;                                                                                    //环岛标志位置1表示左圆环
-                                                island_left_mid_add_flag = 1;                                                           //左圆环中线处理标志位置1，图像处理完之后，按照左圆环方案处理中线输出
-                                                Go_Left_Island();                                                                                   //设置左环岛的PID
+                                                island_flag = 1;                             //环岛标志位置1表示左圆环
+                                                island_left_mid_add_flag = 1;                //左圆环中线处理标志位置1，图像处理完之后，按照左圆环方案处理中线输出
+                                                Go_Left_Island();                            //设置左环岛的PID
                                             }
                                         }
                                     }
@@ -450,9 +445,8 @@ void Fand_Left_Ring(void)
  */
 void Image_Handle()
 {
-    int16 i;                                // 控制行
-    int16 j;                                // 用于二次循环
-    int16 res;                          // 用于结果状态判断
+    int16 i;                    // 控制行
+    int16 j;                    // 用于二次循环
     Line_Count      = 0;        // 赛道行数复位
     Left_Add_Start  = 0;        // 复位左补线起始行坐标
     Right_Add_Start = 0;        // 复位右补线起始行坐标
@@ -468,6 +462,7 @@ void Image_Handle()
 //            Right_Add_Flag[i] = 1;
 //    }
 
+    // 考虑改成逐行检测，但是可能会影响后面的某些代码
     for(i=ROW-3;i>=19;i-=2)
     {
         // TODO:记得写第一行的数据处理，例如right_add_line/left_add_line等等
@@ -483,7 +478,7 @@ void Image_Handle()
                     Left_Add_Flag[i] = 1;                          //强制认定为需要补线
             if (Left_Add_Flag[i] || Right_Add_Flag[i])             //如果需要补线
                 if (Left_Add_Stop  || Right_Add_Stop)              //并且前面已经补过线了，
-                    break;                                                                                                              //就直接结束了，不补线了，补两次没啥用
+                    break;                                         //就直接结束了，不补线了，补两次没啥用
         }
 
         /*************************** 第一轮补线开始 ***************************/
@@ -518,8 +513,8 @@ void Image_Handle()
                 if (!Left_Add_Stop && !Left_Add_Flag[i+2] && !Left_Add_Flag[i+4])                                                       //是否已经停止，是否连续两行没有丢线，不需要补线
                     if (Left_Add_Line[i] >= Left_Add_Line[i+2] && Left_Add_Line[i+2] >= Left_Add_Line[i+4] && Right_Add_Start < 55)     //左边界是否远处比近处的坐标要大，不大，就是赛道不正常
                     {
-                         Left_Add_Stop = i+4;                                                                                                                                       //记录左侧补线结束行，因为检测过两行没丢线了，所以补上去，但此行还是不需要补线
-                         Line_Repair(Left_Add_Start, Left_Add_Stop, Left_Add_Line, 1);                                        //更新补线范围内的左边界
+                         Left_Add_Stop = i+4;                                                     //记录左侧补线结束行，因为检测过两行没丢线了，所以补上去，但此行还是不需要补线
+                         Line_Repair(Left_Add_Start, Left_Add_Stop, Left_Add_Line, 1);            //更新补线范围内的左边界
                     }
         }
         if (Right_Add_Flag[i])                                  //右侧需要补线
@@ -551,12 +546,12 @@ void Image_Handle()
         {
             if (Right_Add_Start)                                    //Right_Add_Start不为0，就表示已经开始补线了
             {
-                if (!Right_Add_Stop && !Right_Add_Flag[i+2] && !Right_Add_Flag[i+4])                                                                    //是否已经停止，是否连续两行没有丢线，不需要补线
+                if (!Right_Add_Stop && !Right_Add_Flag[i+2] && !Right_Add_Flag[i+4])              //是否已经停止，是否连续两行没有丢线，不需要补线
                 {
                     if (rightline[i] <= rightline[i+2] && rightline[i+2] <= rightline[i+4]&& Left_Add_Start < 55)   //右边界是否远处比近处的坐标要小，不小，就是赛道不正常
                     {
-                        Right_Add_Stop = i+4;                                                                                                                                                           //记录右侧补线结束行，因为检测过两行没丢线了，所以补上去，但此行还是不需要补线
-                        Line_Repair(Right_Add_Start, Right_Add_Stop, Right_Add_Line, 2);                                                      //更新补线范围内的右边界
+                        Right_Add_Stop = i+4;                                                     //记录右侧补线结束行，因为检测过两行没丢线了，所以补上去，但此行还是不需要补线
+                        Line_Repair(Right_Add_Start, Right_Add_Stop, Right_Add_Line, 2);         //更新补线范围内的右边界
                     }
                 }
             }

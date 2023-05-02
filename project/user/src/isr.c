@@ -334,11 +334,6 @@ void TIM6_IRQHandler(void)
 
        if(mt9v03x_finish_flag)
        {
-//           BinThreshold(mt9v03x_image);
-//           ImageFilter(img_sobel);
-//           ImagePerspective_Init(img_sobel, img_sobel_pers);
-//           image_scan(img_sobel);
-
            turn_to_bin(mt9v03x_image, MT9V03X_W, MT9V03X_H);
            ImagePerspective_Init(bin_image, perspectiveImage);
            ips200_displayimage03x((const uint8 *)perspectiveImage, MT9V03X_W, MT9V03X_H);
