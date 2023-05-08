@@ -344,22 +344,23 @@ void TIM6_IRQHandler(void)
 //               printf("%d %d\n",i, rightline[i]-leftline[i]);
 //           }
 //           printf("centerline_end\n");
-           printf("leftline_start\n");
-           for(int i=0;i<MT9V03X_H;i++){
-               printf("%d %d\n",i, leftline[i]);
-           }
-           printf("leftline_end\n");
-           printf("rightline_start\n");
-           for(int i=0;i<MT9V03X_H;i++){
-               printf("%d %d\n",i, rightline[i]);
-           }
-           printf("rightline_end\n");
-           ips200_draw_line(0, MT9V03X_H-1, MT9V03X_W, MT9V03X_H-1, RGB565_BROWN);
-           ips200_draw_line(MT9V03X_W/2, 0, MT9V03X_W/2, MT9V03X_H-1, RGB565_BROWN);
-           ips200_draw_line(0, MT9V03X_H-10, MT9V03X_W, MT9V03X_H-10, RGB565_BROWN);
-           ips200_draw_line(0, MT9V03X_H-50, MT9V03X_W, MT9V03X_H-50, RGB565_BROWN);
+//           printf("leftline_start\n");
+//           for(int i=0;i<MT9V03X_H;i++){
+//               printf("%d %d\n",i, leftline[i]);
+//           }
+//           printf("leftline_end\n");
+//           printf("rightline_start\n");
+//           for(int i=0;i<MT9V03X_H;i++){
+//               printf("%d %d\n",i, rightline[i]);
+//           }
+//           printf("rightline_end\n");
+//           ips200_draw_line(0, MT9V03X_H-1, MT9V03X_W, MT9V03X_H-1, RGB565_BROWN);
+//           ips200_draw_line(MT9V03X_W/2, 0, MT9V03X_W/2, MT9V03X_H-1, RGB565_BROWN);
+//           ips200_draw_line(0, MT9V03X_H-10, MT9V03X_W, MT9V03X_H-10, RGB565_BROWN);
+//           ips200_draw_line(0, MT9V03X_H-50, MT9V03X_W, MT9V03X_H-50, RGB565_BROWN);
 //           camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
-//           Draw_Side();
+           Draw_Side();
+//           ips200_show_rgb565_image(135, 200, (const uint16*)Ayaka, 100, 100, 100, 100, 0);
            mt9v03x_finish_flag = 0;
        }
 

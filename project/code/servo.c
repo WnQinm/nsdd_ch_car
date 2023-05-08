@@ -96,6 +96,7 @@ void AngleErr()
 //    midline_f = Angle;
 //    Angle = midline_fff * 0.50f + midline_ff * 0.30f + midline_f * 0.20f;
 
+
     Angle = Angle * 0.80f - regression(MT9V03X_H - 41, MT9V03X_H-21) * 0.20f;
     servo_base_pid();
 }
