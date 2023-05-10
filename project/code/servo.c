@@ -40,8 +40,8 @@ void servo_init(void)
 void servo_control()
 {
     AngleErr();
-    if(Angle<75) Angle=75;
-    if(Angle>105) Angle=105;
+    if(Angle<75) Angle=80;
+    if(Angle>105) Angle=100;
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(Angle));
 
 }

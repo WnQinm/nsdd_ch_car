@@ -15,8 +15,8 @@
 
 #define SERVO_MOTOR_FREQ 50
 
-// 舵机角度->占空比
-#define SERVO_MOTOR_DUTY(x)    ((float)PWM_DUTY_MAX / (1000.0 / (float)SERVO_MOTOR_FREQ) * (0.5 + (float)(x) / 90.0))
+// 舵机角度->占空比        中值：小车0.46 大车0.5
+#define SERVO_MOTOR_DUTY(x)    ((float)PWM_DUTY_MAX / (1000.0 / (float)SERVO_MOTOR_FREQ) * (0.46 + (float)(x) / 90.0))
 
 // 定义车模寻迹舵机引脚
 #define SERVO_PIN           TIM2_PWM_MAP3_CH1_A15

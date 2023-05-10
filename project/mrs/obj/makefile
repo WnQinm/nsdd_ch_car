@@ -56,7 +56,7 @@ all: ch_car_ver3.elf secondary-outputs
 
 # 工具调用
 ch_car_ver3.elf: $(OBJS) $(USER_OBJS)
-	@	@	riscv-none-embed-gcc -march=rv32imafc -mabi=ilp32f -msmall-data-limit=8 -mno-save-restore -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -fno-common -pedantic -Wunused -Wuninitialized -Wall  -g -T "C:\Users\lid\Desktop\ch_car_ver3_4（种子生成+逆透视）\libraries\sdk\Ld\Link.ld" -nostartfiles -Xlinker --gc-sections -L"../" -L"C:\Users\lid\Desktop\ch_car_ver3_4（种子生成+逆透视）\libraries\zf_device" -Wl,-Map,"ch_car_ver3.map" --specs=nano.specs -u _printf_float --specs=nosys.specs -Wl,--print-memory-usage -o "ch_car_ver3.elf" $(OBJS) $(USER_OBJS) $(LIBS)
+	@	@	riscv-none-embed-gcc -march=rv32imafc -mabi=ilp32f -msmall-data-limit=8 -mno-save-restore -O0 -fmessage-length=0 -fsigned-char -ffunction-sections -fdata-sections -fno-common -pedantic -Wunused -Wuninitialized -Wall  -g -T "C:\Users\lid\Desktop\nsdd_ch_car\libraries\sdk\Ld\Link.ld" -nostartfiles -Xlinker --gc-sections -L"../" -L"C:\Users\lid\Desktop\nsdd_ch_car\libraries\zf_device" -Wl,-Map,"ch_car_ver3.map" --specs=nano.specs -u _printf_float --specs=nosys.specs -Wl,--print-memory-usage -o "ch_car_ver3.elf" $(OBJS) $(USER_OBJS) $(LIBS)
 	@	@
 ch_car_ver3.hex: ch_car_ver3.elf
 	@	riscv-none-embed-objcopy -O ihex "ch_car_ver3.elf"  "ch_car_ver3.hex"

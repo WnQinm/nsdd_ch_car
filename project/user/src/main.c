@@ -47,6 +47,7 @@ int main (void)
 
     // 此处编写用户代码 例如外设初始化代码等
     ips200_init(IPS200_TYPE_PARALLEL8);
+    bluetooth_ch9141_init();
 
 //    timer_init(TIM_7, TIMER_MS);//计时器，查看程序运行时间
     IMG_pit_init();
@@ -60,7 +61,6 @@ int main (void)
     // 此处编写用户代码 例如外设初始化代码等
 
     motor_control(1000, 1000);
-
 
     while(1)
     {
