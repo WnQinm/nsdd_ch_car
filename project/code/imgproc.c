@@ -118,20 +118,147 @@ void turn_to_bin(uint8 raw_image[MT9V03X_H][MT9V03X_W], uint8 image_w, uint8 ima
     }
 }
 
+uint8 mid=COL/2;//车车插电后第一张图最下行扫线起点
+void findline(uint8 image[ROW][COL])
+{
+    // 丢线信息初始化
+    Lost_leftline.start.x = -1;
+    Lost_leftline.start.y = -1;
+    Lost_rightline.start.x = -1;
+    Lost_rightline.start.y = -1;
+    Lost_leftline.end.x = -1;
+    Lost_leftline.end.y = -1;
+    Lost_rightline.end.x = -1;
+    Lost_rightline.end.y = -1;
+    Lost_leftline.lost_time = 0;
+    Lost_rightline.lost_time = 0;
+
+    //最下行左边线
+    for(int col=mid;col>=0;col--)
+    {
+        if(col==0)
+        {
+            // 丢线
+            leftline[ROW-1] = 0;
+            Lost_leftline.start.x = -1;
+            Lost_leftline.start.y = ROW-1;
+            Lost_leftline.lost_time++;
+            break;
+        }
+        else if(image[ROW-1][col]==black && image[ROW-1][col+1]==white && image[ROW-1][col+2]==white)
+        {
+            leftline[ROW-1] = col;
+            break;
+        }
+    }
+    //最下行右边线
+    for(int col=mid;col<=COL-1;col++)
+    {
+        if(col==COL-1)
+        {
+            // 丢线
+            rightline[ROW-1] = COL-1;
+            Lost_rightline.start.x = -1;
+            Lost_rightline.start.y = ROW-1;
+            Lost_rightline.lost_time++;
+            break;
+        }
+        else if(image[ROW-1][col]==black && image[ROW-1][col-1]==white && image[ROW-1][col-2]==white)
+        {
+            rightline[ROW-1] = col;
+            break;
+        }
+    }
+    centerline[ROW-1] = (leftline[ROW-1]+rightline[ROW-1])>>1;
+    mid = centerline[ROW-1];
+
+    //其他行
+    for(int row=ROW-2;row>0;row--)
+    {
+        for(int col=centerline[row-1];col>=0;col--)
+        {
+            if(col==0)
+            {
+                //丢线
+                leftline[row] = 0;
+                if(Lost_leftline.start.x == -1)// 如果第一次丢线，上一行的边线点即为角点
+                {
+                    Lost_leftline.start.x = leftline[row-1];
+                    Lost_leftline.start.y = row-1;
+                }
+                else// 不是第一次丢线，添加丢线行数
+                    Lost_leftline.lost_time++;
+                break;
+            }
+            else if(image[row][col]==black && image[row][col+1]==white && image[row][col+2]==white)
+            {
+                leftline[row] = col;
+                if(Lost_leftline.start.x != -1 && Lost_leftline.end.x == -1)//丢线后第一次找到线
+                {
+                    Lost_leftline.end.x = leftline[row];
+                    Lost_leftline.end.y = row;
+                }
+                break;
+            }
+        }
+        for(int col=centerline[row-1];col<=COL-1;col++)
+        {
+            if(col==COL-1)
+            {
+                //丢线
+                rightline[row] = COL-1;
+                if(Lost_rightline.start.x == -1)// 如果第一次丢线，上一行的边线点即为角点
+                {
+                    Lost_rightline.start.x = rightline[row-1];
+                    Lost_rightline.start.y = row-1;
+                }
+                else//不是第一次丢线，添加丢线行数
+                    Lost_rightline.lost_time++;
+                break;
+            }
+            else if(image[row][col]==black && image[row][col-1]==white && image[row][col-2]==white)
+            {
+                rightline[row] = col;
+                if(Lost_rightline.start.x != -1 && Lost_rightline.end.x == -1)//丢线后第一次找到线
+                {
+                    Lost_rightline.end.x = rightline[row];
+                    Lost_rightline.end.y = row;
+                }
+                break;
+            }
+        }
+        centerline[row] = (leftline[row] + rightline[row])>>1;
+//        printf("%d---%d---%d\n", leftline[row], centerline[row], rightline[row]);
+    }
+//    printf("-----------------\n");
+}
+
 // 种子生成法生成左右边线
 // ******边线数组的index:0指代图像最下行******
 void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
 {
+    // 丢线信息初始化
+    Lost_leftline.start.x = -1;
+    Lost_leftline.start.y = -1;
+    Lost_rightline.start.x = -1;
+    Lost_rightline.start.y = -1;
+    Lost_leftline.end.x = -1;
+    Lost_leftline.end.y = -1;
+    Lost_rightline.end.x = -1;
+    Lost_rightline.end.y = -1;
+    Lost_leftline.lost_time = 0;
+    Lost_rightline.lost_time = 0;
+
+
     //***********种子生成法**************
     //最下一行扫线
     uint8 mid=MT9V03X_W/2;
     for(int i=mid-1;0<i;i--){
         if(i==1){
             leftline[0] = 0;
-//            TODO：类似这种的丢线写法，目的是找到角点坐标，以便补线
-//            Lost_leftline.start.x = 1;
-//            Lost_leftline.start.y = ROW-1;
-//            Lost_leftline.lost_time++;
+            Lost_leftline.start.x = -1;
+            Lost_leftline.start.y = ROW-1;
+            Lost_leftline.lost_time++;
             break;
         }else if(abs(bin_image[MT9V03X_H-1][i]-bin_image[MT9V03X_H-1][i-1])==white){
             leftline[0]=i;
@@ -141,10 +268,9 @@ void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
     for(int j=mid;j<MT9V03X_W-1;j++){
         if(j==MT9V03X_W-2){
             rightline[0] = MT9V03X_W-1;
-//            isRightLineDiuXian[0]=1;
-//            Lost_rightline.start.x = 1;
-//            Lost_rightline.start.y = ROW-1;
-//            Lost_rightline.lost_time++;
+            Lost_rightline.start.x = -1;
+            Lost_rightline.start.y = ROW-1;
+            Lost_rightline.lost_time++;
             break;
         }else if(abs(bin_image[MT9V03X_H-1][j]-bin_image[MT9V03X_H-1][j+1])==white){
             rightline[0]=j;
@@ -168,16 +294,32 @@ void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
             if(left+j+1<MT9V03X_W&&abs(imageIn[next2][left+j]-imageIn[next2][left+j+1])==white){
                 leftline[next1]=left+j;
                 isLeftDiuXian=114;
+                if(Lost_leftline.start.x != -1 && Lost_leftline.end.x == -1)//丢线后第一次找到线
+                {
+                    Lost_leftline.end.x = leftline[next1];
+                    Lost_leftline.end.y = next1;
+                }
             }
             if(left-j-1>=0&&abs(imageIn[next2][left-j-1]-imageIn[next2][left-j])==white){
                 leftline[next1]=left-j;
                 isLeftDiuXian=114;
+                if(Lost_leftline.start.x != -1 && Lost_leftline.end.x == -1)//丢线后第一次找到线
+                {
+                    Lost_leftline.end.x = leftline[next1];
+                    Lost_leftline.end.y = next1;
+                }
             }
         }
-        //处理丢线，如果丢线，则说明面前是环岛或者十字路口
+        //处理丢线
         if(isLeftDiuXian==0){
-//            isLeftLineDiuXian[next1]=1;
             leftline[next1]=0;
+            if(Lost_leftline.start.x ==0)// 如果第一次丢线，上一行的边线点即为角点
+            {
+                Lost_leftline.start.x = leftline[i];// TODO:我看上面找到线 指找到了next1行的线，所以这里就弄next1前一行，即第i行
+                Lost_leftline.start.y = i;
+            }
+            else// 不是第一次丢线，添加丢线行数
+                Lost_leftline.lost_time++;
         }
 
 
@@ -187,16 +329,33 @@ void BinThreshold(unsigned char imageIn[MT9V03X_H][MT9V03X_W])
             if(right+j+1<MT9V03X_W&&abs(imageIn[next2][right+j]-imageIn[next2][right+j+1])==white){
                 rightline[next1]=right+j;
                 isRightDiuXian=114;
+                if(Lost_rightline.start.x != -1 && Lost_rightline.end.x == -1)//丢线后第一次找到线
+                {
+                    Lost_rightline.end.x = rightline[next1];
+                    Lost_rightline.end.y = next1;
+                }
             }
             if(right-j-1>=0&&abs(imageIn[next2][right-j-1]-imageIn[next2][right-j])==white){
                 rightline[next1]=right-j;
                 isRightDiuXian=114;
+                if(Lost_rightline.start.x != -1 && Lost_rightline.end.x == -1)//丢线后第一次找到线
+                {
+                    Lost_rightline.end.x = rightline[next1];
+                    Lost_rightline.end.y = next1;
+                }
             }
         }
         //处理丢线，如果丢线，则说明面前是环岛或者十字路口
+        // TODO:如果有两处丢线，则只关注第一次丢线
         if(isRightDiuXian==0){
-//            isRightLineDiuXian[next1]=1;
             rightline[next1]=MT9V03X_W-1;
+            if(Lost_leftline.start.x ==0)// 如果第一次丢线，上一行的边线点即为角点
+            {
+                Lost_leftline.start.x = leftline[i];// TODO:我看上面找到线 指找到了next1行的线，所以这里就弄next1前一行，即第i行
+                Lost_leftline.start.y = i;
+            }
+            else// 不是第一次丢线，添加丢线行数
+                Lost_leftline.lost_time++;
         }
         centerline[next1] = (leftline[next1]+rightline[next1])>>1;
         //这里应该有道路状况识别，但我不会写/doge
@@ -236,10 +395,9 @@ void ImageFilter(unsigned char imageInput[MT9V03X_H][MT9V03X_W])
 // 画边线
 void Draw_Side()
 {
-    uint8 y;
+//    uint8 y;
     for(uint8 row = 0; row<MT9V03X_H; row++)
     {
-        y = MT9V03X_H-1-row;
         if(leftline[row]<0)
             leftline[row] = 0;
         if(leftline[row]>=MT9V03X_W)
@@ -248,17 +406,16 @@ void Draw_Side()
             rightline[row] = 0;
         if(rightline[row]>=MT9V03X_W)
             rightline[row] = MT9V03X_W-1;
-        if(centerline[row]<0 || centerline[row]>=MT9V03X_W)
-            centerline[row] = (leftline[row]+rightline[row])>>1;
-        ips200_draw_point(leftline[row], y, RGB565_BLUE);
-        ips200_draw_point(rightline[row], y, RGB565_BLUE);
-        ips200_draw_point(centerline[row], y, RGB565_RED);
+        ips200_draw_point(leftline[row], row, RGB565_BLUE);
+        ips200_draw_point(rightline[row], row, RGB565_BLUE);
+        ips200_draw_point(centerline[row], row, RGB565_RED);
     }
 }
 
 void ImagePerspective_Init(uint8 BinImage[MT9V03X_H][MT9V03X_W], uint8 ResultImage[MT9V03X_H][MT9V03X_W])
 {
-    float change_un_Mat[3][3] ={{-0.352043,0.324030,-23.060735},{0.012529,0.058598,-30.547456},{0.000205,0.003490,-0.632328}};
+//    float change_un_Mat[3][3] ={{-0.352043,0.324030,-23.060735},{0.012529,0.058598,-30.547456},{0.000205,0.003490,-0.632328}};
+    float change_un_Mat[3][3] ={{-0.234447,0.227495,-17.207843},{0.009790,0.019755,-16.513155},{0.000104,0.002306,-0.410462}};
     for (int i = 0; i < COL ;i++) {
         for (int j = 0; j < ROW ;j++) {
             int local_x = (int) ((change_un_Mat[0][0] * i
@@ -310,249 +467,37 @@ void FindLineFromOneSide(uint8 turn){
 
 }
 
-/*-------------------------------------------------------------------------------------------------------------------
-函数：补线
-说明：有始有终才使用，直接使用两点斜率进行补线，能进此函数必定有始有终
-            start补线起始行指向突出点             stop补线终止行指向          data获取的图像Imagel
-            Line_Add为Left_Line_Add或Right_Line_Add         Mode 1为左补线2为右补线
--------------------------------------------------------------------------------------------------------------------*/
-void Line_Repair(uint8 Start, uint8 Stop, int16 *Line_Add, int16 Mode)
+/******************************************************************************
+ *
+//曲线拟合   CommonRectificate(&P_LeftBlack[0],startPos-1,endPos+1);
+******************************************************************************/
+void CommonRectificate(unsigned char data[],unsigned char begin,unsigned char end)
 {
-    float res;              //临时变量，储存修补结果
-    int16 i;                    //控制行
-    float Ka, Kb;           //临时变量
-
-    if ((Mode == 1) && (Right_Add_Start <= Stop) && Start <= 53)            //左边界补线（53行之后）
-    {/*Right_Add_Start <= Stop表示在此行之前，右边界扫描都无问题存在，不需要补线*/
-        for (i = Start; i >= Stop+2; i -= 2)
-        {
-            Line_Add[i] = Limit_Protect(Right_Add_Line[i] - Road_Width_Add[i+2], 1, COL-1); //Right_Add_Line与Right_Line数值其实应该是一样的，右边界减去赛道宽度等于左边界
-            Road_Width_Add[i] = Road_Width_Add[i+2];                                                                                //这样补出来的线应该会比直接斜率补出来稳一点
-        }
-    }
-    else if ((Mode == 2) && (Left_Add_Start <= Stop) && Start <= 53)    //右边界补线（53行之后）
-    {/*Left_Add_Start <= Stop表示在此行之前，左边界扫描都无问题存在，不需要补线*/
-        for (i = Start; i >= Stop+2; i -= 2)
-        {
-            Line_Add[i] = Limit_Protect(Left_Add_Line[i] + Road_Width_Add[i+2], 1, COL-1);  //Left_Add_Line与Left_Line数值其实应该是一样的，左边界加上赛道宽度等于左边界
-            Road_Width_Add[i] = Road_Width_Add[i+2];                                                                                //这样补出来的线应该会比直接斜率补出来稳一点
-        }
-    }
-    else
-    {
-        if (Stop)                                                                                   //有始有终
-        {
-            if(Mode == 1)                                                                       //左边界补线
-                for(i=Stop+2; i<=Stop-4; i-=2)                              //寻找左边界近处凸出点
-                {/*为什么要找凸出点，因为图像边界是倾斜的，第一个左边界的点很可能十分靠近图像最左侧，实际图像看一下就明白了*/
-                    if(leftline[i]-leftline[i+2] >= 4 )               //数字是相邻两个左边界坐标的差值，如果差值太大，证明这个点不适合补线
-                         Stop = i ;                                                             //更新为凸出点的为停止补线行，这样补出来的边界线更符合实际
-                }
-            else if(Mode == 2)                                                          //右边界补线
-                for(i=Stop+2; i<=Stop-4; i-=2)                              //寻找右边界近处凸出点
-                {/*为什么要找凸出点，因为图像边界是倾斜的，第一个右边界的点很可能十分靠近图像最右侧，实际图像看一下就明白了*/
-                    if(rightline[i+2]-rightline[i] >= 4 )         //数字是相邻两个右边界坐标的差值，如果差值太大，证明这个点不适合补线
-                        Stop = i ;                                                              //更新为凸出点的为停止补线行，这样补出来的边界线更符合实际
-                }
-            if ((Right_Add_Stop >= MIDVALUE && Left_Add_Stop   >= MIDVALUE)       || \
-                    (Right_Add_Stop >= MIDVALUE && Left_Add_Start  <= Right_Add_Stop) || \
-                    (Left_Add_Stop  >= MIDVALUE && Right_Add_Start <= Left_Add_Stop))   //只有较少行需要补线，不计算斜率，直接竖直向下补线
-            {
-                for (i = Stop-2; i <= 57; )                                                                                 //从停止行向近处的57行开始补线
-                {
-                    i += 2;
-                    Line_Add[i] = Line_Add[Stop];                                                                           //竖直向下补线，不用计算斜率
-                }
-            }
-            else                                                                                                                                    //将起始行和结束行计算斜率补线
-            {
-                Ka = 1.0*(Line_Add[Start] - Line_Add[Stop]) / (Start - Stop);               //两点法算出斜率Ka
-                Kb = 1.0*Line_Add[Start] - (Ka * Start);                                                        //带入起始点，算出常数Kb
-                for (i = Stop+2; i < Start; i += 2)                                                                 //从停止行到起始行
-                {
-                    res = i * Ka + Kb;                                                                                              //利用Ka,Kb计算丢线行的坐标
-                    Line_Add[i] = Limit_Protect((int32)res, 1, COL-1);                              //判断是否超出图像区域
-                }
-            }
-        }
-    }
+       unsigned char MidPos = 0;
+       if (end > ROW-1)
+       {
+          end = ROW-1;
+       }
+       if (begin == end)
+       {
+          data[begin] = (data[begin-1]+data[begin+1])>>1;
+         // BlackLineData[begin] =  LeftBlack[begin] + (RightBlack[begin]-LeftBlack[begin])/2;
+       }
+       else if(begin < end)
+       {
+          MidPos = (begin+end)>>1;
+          data[MidPos] = (data[begin]+data[end])>>1;
+          //BlackLineData[MidPos] =  LeftBlack[MidPos] + (RightBlack[MidPos]-LeftBlack[MidPos])/2;
+          if (begin+1 < MidPos)
+          {
+             CommonRectificate(data,begin,MidPos);
+          }
+          if (MidPos+1 < end)
+          {
+             CommonRectificate(data,MidPos,end);
+          }
+       }
 }
-
-/*-------------------------------------------------------------------------------------------------------------------
-函数：寻找左环岛函数
-说明：放在图像处理函数里，一直进行扫描
--------------------------------------------------------------------------------------------------------------------*/
-void Fand_Left_Ring(void)
-{
-    int i = 0;                                          //用于循环
-    int count_flag = 0;                         //每次扫描前都要清零，count_flag表示检测右边界赛道拟合程度较好的点的数量
-    diu_hang_num = 0;                           //每次扫描前都要清零，diu_hang_num表示连续五行丢线的最远行所在的行数（纵坐标）
-    if (Line_Count <= 25)                       //有效行小于25行，表示赛道不正常，开始扫描
-    {
-            for(i=45; i>=25; i-=2)          //在25行到45行之间扫描左边界
-            {
-                    if (leftline[i]==1&&leftline[i+2]==1&&leftline[i+4]==1&&leftline[i+6]==1)       //左边有五行丢线可能遇到圆环
-                    {
-                            diu_hang_num = i;       //更新连续五行丢线的最远丢线行所在行数
-                            break;                          //找到退出循环
-                    }
-            }
-            if (diu_hang_num > 23)          //连续五行丢线的最远丢线行所在行数大于23行
-            {
-            /*右边界没丢线，只有丢线的时候等于93，右边31行和51行不相等，保证有斜率，做左边界近处前几行没丢线，只有丢线的时候等于1*/
-                    if (rightline[51] != 93 && rightline[31] != 93 && rightline[31] < rightline[51] && \
-                            rightline[19] != 93 && rightline[19] <= rightline[31] && \
-                            leftline[19] != 1 &&  leftline[21] != 1 && leftline[57] != 1 && leftline[55] != 1 )
-                    {
-                            for(i=55; i>19; i-=2)
-                            {
-                                if(rightline[i] != 93)                                         //右侧55到19行没丢线
-                                    if(rightline[i+2] < rightline[i])             //并且远处行的横坐标小于近处行，表示扫描赛道正常
-                                        return ;                                                                //右边界不正常，无法进行后续处理，返回结束
-                            }
-                            Curve3_Fitting(&Right_Ka, &Right_Kb, 51,31, rightline, 2);                 //拟合右边界的斜率
-                            /*需要在线调试并，修改Ka，Kb的范围保证车能识别到圆环*/
-                            if(Right_Ka>=0.3f && Right_Ka <= 0.65f)                                                         //判断拟合的Ka是否在正常范围，表示赛道正常，车身较正
-                            {
-                                if(Right_Kb >= 30 && Right_Kb <= 65)                                                            //判断拟合的Kb是否在正常范围，表示赛道正常，车身较正
-                                {
-                                    for(int aaaaa = 25; aaaaa <= 57; aaaaa += 2)
-                                    {
-                                        Is_Right_Line[aaaaa]  = Fit_Point(aaaaa, Right_Ka, Right_Kb);   //将拟合结果放入圆环专属补线数组
-                                        if(rightline[aaaaa] <= (Is_Right_Line[aaaaa]+1) && rightline[aaaaa] >= (Is_Right_Line[aaaaa]-1))//拟合结果较好，右边界正常
-                                        {
-                                            if(++count_flag == 15)                                                                          //至少15个点拟合没问题
-                                            {
-                                                island_flag = 1;                                                                                    //环岛标志位置1表示左圆环
-                                                island_left_mid_add_flag = 1;                                                           //左圆环中线处理标志位置1，图像处理完之后，按照左圆环方案处理中线输出
-                                                Go_Left_Island();                                                                                   //设置左环岛的PID
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-
-                    }
-            }
-    }
-}
-
-//void Image_Handle()
-//{
-//    int16 i;                                // 控制行
-//    int16 j;                                // 用于二次循环
-//    int16 res;                          // 用于结果状态判断
-//    Line_Count      = 0;        // 赛道行数复位
-//    Left_Add_Start  = 0;        // 复位左补线起始行坐标
-//    Right_Add_Start = 0;        // 复位右补线起始行坐标
-//    Left_Add_Stop   = 0;        // 复位左补线起终止坐标
-//    Right_Add_Stop  = 0;        // 复位右补线起终止坐标
-//
-//    /***************************** TODO:清除上一帧图像的数据 *****************************/
-////    for (i = ROW-3; i >= 19;i-=2)           //初始化边界值，第一行会特殊处理所以一进来就ROW-3
-////    {
-////            Right_Line[i]     = COL-1;      //给定边界初始值
-////            Left_Line[i]      = 1;              //给定边界初始值
-////            Left_Add_Flag[i]  = 1;              //初始化补线标志位需要补线为1，不需要补线为0
-////            Right_Add_Flag[i] = 1;
-////    }
-//
-//    for(i=ROW-3;i>=19;i-=2)
-//    {
-//        // TODO:记得写第一行的数据处理，例如right_add_line/left_add_line等等
-//        /**************************** 补线检测开始 ****************************/
-//        // TODO:road_width_min+1有点敏感了，依赖于十分良好的逆透视，感觉要改大些
-//        if (road_width[i] > Road_Width_Min+1)                      //赛道宽度变宽，可能是十字或环路
-//        {
-//            if (Right_Add_Line[i] >= Right_Add_Line[i+2])          //右边界后一行比前一行大了？肯定有问题
-//                if (!Right_Add_Flag[i])                            //如果找到边界了
-//                    Right_Add_Flag[i] = 1;                         //强制认定为需要补线
-//            if (Left_Add_Line[i] <=  Left_Add_Line[i+2])           //右边界后一行比前一行大了？肯定有问题
-//                if (!Left_Add_Flag[i])                             //如果找到边界了
-//                    Left_Add_Flag[i] = 1;                          //强制认定为需要补线
-//            if (Left_Add_Flag[i] || Right_Add_Flag[i])             //如果需要补线
-//                if (Left_Add_Stop  || Right_Add_Stop)              //并且前面已经补过线了，
-//                    break;                                                                                                              //就直接结束了，不补线了，补两次没啥用
-//        }
-//
-//        /*************************** 第一轮补线开始 ***************************/
-//        if (Left_Add_Flag[i])                                       //左侧需要补线
-//        {
-//            if (i >= ROW-5)                                            //前三行补线不算 //TODO:这里的行数有点迷，先写row-5了
-//            {
-//                if (!Left_Add_Start)                                //检测是不是第一次补线
-//                {
-//                    Left_Add_Start = i;                             //记录左侧补线开始行
-//                    for(j=ROW-1; j>=i; j-=2)                //寻找左边界近处凸出点
-//                        if(leftline[j] > leftline[Left_Add_Start] )
-//                            Left_Add_Start = j;                     //更新凸出点
-//                    Left_Ka = 0;                                            //Ka等于0
-//                    Left_Kb = Left_Add_Line[Left_Add_Start];                    //Kb等于此行横坐标，用凸出点竖直补线
-//                }
-//                Left_Add_Line[i] =  Fit_Point(i, Left_Ka, Left_Kb); //使用前一帧图像左边界斜率补线（Ka=0就直接补Kb，不就是底线吗）
-//            }
-//            else                                                                    //如果不是前三行
-//            {
-//                if (!Left_Add_Start)                                //检测是不是第一次补线
-//                {
-//                    Left_Add_Start = i;                             //记录左侧补线开始行
-//                    Curve1_Fitting(&Left_Ka, &Left_Kb, &Left_Add_Start, Left_Add_Line, 1);  /*Left_Add_Start的值会指向有数据的上一行*///拟合直线Ka,Kb的值会更改
-//                }
-//                Left_Add_Line[i] = Fit_Point(i, Left_Ka, Left_Kb);  //补线完成，利用前两行的斜率补一下
-//            }
-//        }
-//        else                                                                        //此行左侧不需要需要补线了
-//        {
-//            if (Left_Add_Start)                                     //Left_Add_Start不为0，就表示已经开始补线了
-//                if (!Left_Add_Stop && !Left_Add_Flag[i+2] && !Left_Add_Flag[i+4])                                                       //是否已经停止，是否连续两行没有丢线，不需要补线
-//                    if (Left_Add_Line[i] >= Left_Add_Line[i+2] && Left_Add_Line[i+2] >= Left_Add_Line[i+4] && Right_Add_Start < 55)     //左边界是否远处比近处的坐标要大，不大，就是赛道不正常
-//                    {
-//                         Left_Add_Stop = i+4;                                                                                                                                       //记录左侧补线结束行，因为检测过两行没丢线了，所以补上去，但此行还是不需要补线
-//                         Line_Repair(Left_Add_Start, Left_Add_Stop, Left_Add_Line, 1);                                        //更新补线范围内的左边界
-//                    }
-//        }
-//        if (Right_Add_Flag[i])                                  //右侧需要补线
-//        {
-//            if (i >= 55)                                                    //前三行补线不算
-//            {
-//                if (!Right_Add_Start)
-//                {
-//                    Right_Add_Start = i;                            //记录补线开始行
-//                    for(j=ROW-1; j>=i; j-=2)                //寻找右边界近处凸出点
-//                        if(rightline[j] < rightline[Right_Add_Start] )
-//                            Right_Add_Start = j;                    //更新凸出点
-//                    Right_Ka = 0;                                           //Ka等于0
-//                    Right_Kb = Right_Add_Line[Right_Add_Start];                     //Kb等于此行横坐标，用凸出点竖直补线
-//                }
-//                    Right_Add_Line[i] = Fit_Point(i, Right_Ka, Right_Kb);   //使用前一帧图像左边界斜率补线（Ka=0就直接补Kb，不就是底线吗）
-//            }
-//            else
-//            {
-//                if (!Right_Add_Start)                               //检测是不是第一次补线
-//                {
-//                    Right_Add_Start = i;                            //记录右侧补线开始行
-//                    Curve1_Fitting(&Right_Ka, &Right_Kb, &Right_Add_Start, Right_Add_Line, 2);  /*Right_Add_Start的值会指向有数据的上一行*///拟合直线Ka,Kb的值会更改
-//                }
-//                    Right_Add_Line[i] = Fit_Point(i, Right_Ka, Right_Kb);   //补线完成，利用前两行的斜率补一下
-//            }
-//        }
-//        else
-//        {
-//            if (Right_Add_Start)                                    //Right_Add_Start不为0，就表示已经开始补线了
-//            {
-//                if (!Right_Add_Stop && !Right_Add_Flag[i+2] && !Right_Add_Flag[i+4])                                                                    //是否已经停止，是否连续两行没有丢线，不需要补线
-//                {
-//                    if (rightline[i] <= rightline[i+2] && rightline[i+2] <= rightline[i+4]&& Left_Add_Start < 55)   //右边界是否远处比近处的坐标要小，不小，就是赛道不正常
-//                    {
-//                        Right_Add_Stop = i+4;                                                                                                                                                           //记录右侧补线结束行，因为检测过两行没丢线了，所以补上去，但此行还是不需要补线
-//                        Line_Repair(Right_Add_Start, Right_Add_Stop, Right_Add_Line, 2);                                                      //更新补线范围内的右边界
-//                    }
-//                }
-//            }
-//        }
-//        /*************************** 第一轮补线结束 ***************************/
-//    }
-//}
 
 void Image_Handle()
 {
@@ -564,30 +509,14 @@ void Image_Handle()
     {
         turn_to_bin(mt9v03x_image, MT9V03X_W, MT9V03X_H);
         ImagePerspective_Init(bin_image, perspectiveImage);
-        ips200_displayimage03x((const uint8 *)bin_image, MT9V03X_W, MT9V03X_H);
+        ips200_displayimage03x((const uint8 *)perspectiveImage, MT9V03X_W, MT9V03X_H);
 //        bluetooth_ch9141_send_image((const uint8 *)perspectiveImage, MT9V03X_IMAGE_SIZE);
 //        camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
-        BinThreshold(perspectiveImage);
-        FindLineFromOneSide(JudgeLeftorRight());
-//           printf("centerline_start\n");
-//           for(int i=0;i<MT9V03X_H;i++){
-//               printf("%d %d\n",i, rightline[i]-leftline[i]);
-//           }
-//           printf("centerline_end\n");
-//           printf("leftline_start\n");
-//           for(int i=0;i<MT9V03X_H;i++){
-//               printf("%d %d\n",i, leftline[i]);
-//           }
-//           printf("leftline_end\n");
-//           printf("rightline_start\n");
-//           for(int i=0;i<MT9V03X_H;i++){
-//               printf("%d %d\n",i, rightline[i]);
-//           }
-//           printf("rightline_end\n");
-//           ips200_draw_line(0, MT9V03X_H-1, MT9V03X_W, MT9V03X_H-1, RGB565_BROWN);
-//           ips200_draw_line(MT9V03X_W/2, 0, MT9V03X_W/2, MT9V03X_H-1, RGB565_BROWN);
-//           ips200_draw_line(0, MT9V03X_H-10, MT9V03X_W, MT9V03X_H-10, RGB565_BROWN);
-//           ips200_draw_line(0, MT9V03X_H-50, MT9V03X_W, MT9V03X_H-50, RGB565_BROWN);
+//        BinThreshold(perspectiveImage);
+        findline(perspectiveImage);
+//        CommonRectificate(leftline, Lost_leftline.start.y, Lost_leftline.end.y);
+//        CommonRectificate(leftline, Lost_rightline.start.y, Lost_rightline.end.y);
+//        FindLineFromOneSide(JudgeLeftorRight());
 
         Draw_Side();
         mt9v03x_finish_flag = 0;
