@@ -33,6 +33,12 @@ typedef struct
     uint8 lost_time;//丢边线行数
 }Lost_Edgeline;
 
+typedef struct
+{
+    uint8 start_y;
+    uint8 end_y;
+}breakpoint;
+
 extern uint8 bin_image[MT9V03X_H][MT9V03X_W];//图像数组
 extern uint8 perspectiveImage[MT9V03X_H][MT9V03X_W];
 extern uint8 OpeningRoad_Flag;

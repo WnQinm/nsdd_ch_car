@@ -11,26 +11,10 @@ uint8 rightline[MT9V03X_H], leftline[MT9V03X_H];//rightline£∫”“œﬂ£¨leftline£∫◊Ûœ
 uint8 road_width[MT9V03X_H], centerline[MT9V03X_H];//road_width£∫µ¿¬∑øÌ∂»£¨centerline£∫µ¿¬∑÷–œﬂ
 uint8 bin_image[MT9V03X_H][MT9V03X_W];//ÕºœÒ ˝◊È
 uint8 perspectiveImage[MT9V03X_H][MT9V03X_W];//ƒÊÕ∏ ”÷Æ∫Û ˝◊È
-
-int16   Left_Add_Start, Right_Add_Start;  // ◊Û”“≤πœﬂ∆ º––◊¯±Í
-int16   Left_Add_Stop, Right_Add_Stop;    // ◊Û”“≤πœﬂΩ· ¯––◊¯±Í
-
-// TODO:1.‘⁄º∆À„÷–œﬂ ±º∆À„»¸µ¿øÌ∂»£¨≤¢±£¡Ù◊Ó–°øÌ∂»µΩRoad_Width_Min(«∞Ã· «◊ˆƒÊÕ∏ ”)
-//      2.–ﬁ∏ƒROW ∫Õ  COL
-int16   Left_Add_Line[ROW+2], Right_Add_Line[ROW+2];        // ◊Û”“±ﬂΩÁ≤πœﬂ ˝æ›
-int16   Left_Add_Flag[ROW+2] , Right_Add_Flag[ROW+2];       // ◊Û”“±ﬂΩÁ≤πœﬂ±Í÷æŒª
-// TODO:road_width_add…Êº∞µΩ∂‡¥¶º∆À„£¨º«µ√≤π…œ
-int16   Road_Width_Add[ROW+2];  // ≤πœﬂ»¸µ¿øÌ∂»
-int16   diu_hang_num;       // ∂™œﬂ–– ˝£¨ºÏ≤‚ª∑µ∫”√
-int16   Line_Count;         // º«¬º≥…π¶ ∂±µΩµƒ»¸µ¿–– ˝
-float   Left_Ka = 0, Right_Ka = 0;
-float   Left_Kb = 1, Right_Kb = COL-1;  // ◊Ó–°∂˛≥À∑®≤Œ ˝
-int16   Is_Right_Line[62] = {0},Is_Left_Line[62] = {0};//∂‘±»µƒ¡Ÿ ± ˝◊È£¨ºÏ≤‚ª∑µ∫ ±”√
-int16   island_flag = 0;   //±Í÷æŒ™0≤ª «ª∑µ∫   ±Í÷æŒ™1 «◊Ûª∑µ∫   ±Í÷æŒ™2 «”“ª∑µ∫
-int16   island_left_mid_add_flag = 0,island_right_mid_add_flag = 0;//◊Û”“ª∑µ∫Ω¯≥ˆ≤πœﬂ±Í÷æŒª
 int16   Road_Width_Min;     // ◊Ó–°»¸µ¿øÌ∂»
 
 Lost_Edgeline Lost_leftline, Lost_rightline;
+breakpoint LeftBreakpoint, RightBreakpoint;//’‚¿ÔµƒΩ«µ„ «¥”œ¬œÚ…œø¥µƒ£¨À˘“‘start÷∏œ¬√Êƒ«∏ˆΩ«µ„
 
 uint8 otsuThreshold(uint8 *image, uint16 col, uint16 row)
 {
@@ -231,6 +215,125 @@ void findline(uint8 image[ROW][COL])
 //        printf("%d---%d---%d\n", leftline[row], centerline[row], rightline[row]);
     }
 //    printf("-----------------\n");
+}
+
+/******************************************************************************
+ *
+//«˙œﬂƒ‚∫œ   CommonRectificate(&P_LeftBlack[0],startPos-1,endPos+1);
+******************************************************************************/
+void CommonRectificate(unsigned char data[],unsigned char begin,unsigned char end)
+{
+       unsigned char MidPos = 0;
+       if (end > ROW-1)
+       {
+          end = ROW-1;
+       }
+       if (begin == end)
+       {
+          data[begin] = (data[begin-1]+data[begin+1])>>1;
+         // BlackLineData[begin] =  LeftBlack[begin] + (RightBlack[begin]-LeftBlack[begin])/2;
+       }
+       else if(begin < end)
+       {
+          MidPos = (begin+end)>>1;
+          data[MidPos] = (data[begin]+data[end])>>1;
+          //BlackLineData[MidPos] =  LeftBlack[MidPos] + (RightBlack[MidPos]-LeftBlack[MidPos])/2;
+          if (begin+1 < MidPos)
+          {
+             CommonRectificate(data,begin,MidPos);
+          }
+          if (MidPos+1 < end)
+          {
+             CommonRectificate(data,MidPos,end);
+          }
+       }
+}
+
+//◊Ó–°∂˛≥À∑®ƒ‚∫œ–±¬ 
+float Slope_Calculate(uint8 begin,uint8 end,uint8 *p)
+{
+  float xsum=0,ysum=0,xysum=0,x2sum=0;
+  uint8 i=0;
+  float result=0;
+  static float resultlast;
+  p=p+begin;
+  for(i=begin;i<end;i++)
+  {
+      xsum+=i;
+      ysum+=*p;
+      xysum+=i*(*p);
+      x2sum+=i*i;
+      p=p+1;
+  }
+ if((end-begin)*x2sum-xsum*xsum) //≈–∂œ≥˝ ˝ «∑ÒŒ™¡„
+ {
+   result=((end-begin)*xysum-xsum*ysum)/((end-begin)*x2sum-xsum*xsum);
+   resultlast=result;
+ }
+ else
+ {
+  result=resultlast;
+ }
+ return result;
+}
+
+// ∏˘æ›µ•∏ˆµ„ƒ‚∫œ÷±œﬂ ±£¨º∆À„–±¬ –Ë“™µƒµ„µƒ∏ˆ ˝£®µ„‘Ω…Ÿ£¨ƒ‚∫œ÷±œﬂ–ßπ˚‘Ω≤Ó£ªµ„‘Ω∂‡£¨ø…ƒ‹ª·”–¿˝»Áª∑µ∫µƒ∂™œﬂ£©
+#define slope_len 5
+void AddLine()
+{
+    LeftBreakpoint.start_y = -1;
+    LeftBreakpoint.end_y = -1;
+    RightBreakpoint.start_y = -1;
+    RightBreakpoint.end_y = -1;
+
+    for(int row=ROW-1;row>2;row--)
+    {
+        if(LeftBreakpoint.start_y==-1 && leftline[row]-leftline[row-2]>20)//◊Û±ﬂœﬂœ¬ºı…œ>20£¨œ¬∏ﬂ…œµÕ£¨◊Ûœ¬Ω«µ„
+            LeftBreakpoint.start_y = row;
+        else if(LeftBreakpoint.end_y!=-1 && leftline[row-2]-leftline[row]>20)//◊Û±ﬂœﬂ…œºıœ¬>20£¨…œ∏ﬂœ¬µÕ£¨◊Û…œΩ«µ„
+            LeftBreakpoint.end_y = row;
+
+        if(RightBreakpoint.start_y==-1 && rightline[row-2]-rightline[row]>20)//”“±ﬂœﬂ…œºıœ¬>20£¨…œµÕœ¬∏ﬂ£¨”“œ¬Ω«µ„
+            RightBreakpoint.start_y = row;
+        else if(RightBreakpoint.end_y!=-1 && rightline[row]-rightline[row-2]>20)//”“±ﬂœﬂœ¬ºı…œ>20£¨œ¬µÕ…œ∏ﬂ£¨”“…œΩ«µ„
+            RightBreakpoint.end_y = row;
+    }
+
+    // ∂‘◊Û±ﬂœﬂ£∫
+    if(LeftBreakpoint.start_y!=-1 && LeftBreakpoint.end_y!=-1)// …œœ¬Ω«µ„∂º”–
+        CommonRectificate(leftline, LeftBreakpoint.end_y, LeftBreakpoint.start_y);//end‘⁄…œ√Êstart‘⁄œ¬√Ê£¨À˘“‘begin «end
+    else if(LeftBreakpoint.start_y!=-1 && LeftBreakpoint.end_y==-1)// ÷ª”–œ¬Ω«µ„√ª”–…œΩ«µ„
+    {
+        float k = Slope_Calculate(LeftBreakpoint.start_y, LeftBreakpoint.start_y+5, leftline);
+        float b = LeftBreakpoint.start_y - k * leftline[LeftBreakpoint.start_y];
+        for(uint8 row=LeftBreakpoint.start_y;row>=0;row--)
+            leftline[row] = (uint8)(row-b)/k;
+    }
+    else if(LeftBreakpoint.start_y==-1 && LeftBreakpoint.end_y!=-1)// ÷ª”–…œΩ«µ„√ª”–œ¬Ω«µ„
+    {
+        float k = Slope_Calculate(LeftBreakpoint.end_y-5, LeftBreakpoint.end_y, leftline);
+        float b = LeftBreakpoint.end_y - k * leftline[LeftBreakpoint.end_y];
+        for(uint8 row=LeftBreakpoint.end_y;row<ROW;row++)
+            leftline[row] =(uint8)(row-b)/k;
+    }
+
+    // ∂‘”“±ﬂœﬂ£∫
+    if(RightBreakpoint.start_y!=-1 && RightBreakpoint.end_y!=-1)// …œœ¬Ω«µ„∂º”–
+        CommonRectificate(rightline, RightBreakpoint.end_y, RightBreakpoint.start_y);
+    else if(RightBreakpoint.start_y!=-1 && RightBreakpoint.end_y==-1)// ÷ª”–œ¬Ω«µ„√ª”–…œΩ«µ„
+    {
+        float k = Slope_Calculate(RightBreakpoint.start_y, RightBreakpoint.start_y+5, rightline);
+        float b = RightBreakpoint.start_y - k * rightline[RightBreakpoint.start_y];
+        for(uint8 row=RightBreakpoint.start_y;row>=0;row--)
+            rightline[row] = (uint8)(row-b)/k;
+    }
+    else if(RightBreakpoint.start_y==-1 && RightBreakpoint.end_y!=-1)// ÷ª”–…œΩ«µ„√ª”–œ¬Ω«µ„
+    {
+        float k = Slope_Calculate(RightBreakpoint.end_y-5, RightBreakpoint.end_y, rightline);
+        float b = RightBreakpoint.end_y - k * rightline[RightBreakpoint.end_y];
+        for(uint8 row=RightBreakpoint.end_y;row<ROW;row++)
+            rightline[row] =(uint8)(row-b)/k;
+    }
 }
 
 // ÷÷◊”…˙≥…∑®…˙≥…◊Û”“±ﬂœﬂ
@@ -464,39 +567,6 @@ void FindLineFromOneSide(uint8 turn){
             }
         }
     }
-
-}
-
-/******************************************************************************
- *
-//«˙œﬂƒ‚∫œ   CommonRectificate(&P_LeftBlack[0],startPos-1,endPos+1);
-******************************************************************************/
-void CommonRectificate(unsigned char data[],unsigned char begin,unsigned char end)
-{
-       unsigned char MidPos = 0;
-       if (end > ROW-1)
-       {
-          end = ROW-1;
-       }
-       if (begin == end)
-       {
-          data[begin] = (data[begin-1]+data[begin+1])>>1;
-         // BlackLineData[begin] =  LeftBlack[begin] + (RightBlack[begin]-LeftBlack[begin])/2;
-       }
-       else if(begin < end)
-       {
-          MidPos = (begin+end)>>1;
-          data[MidPos] = (data[begin]+data[end])>>1;
-          //BlackLineData[MidPos] =  LeftBlack[MidPos] + (RightBlack[MidPos]-LeftBlack[MidPos])/2;
-          if (begin+1 < MidPos)
-          {
-             CommonRectificate(data,begin,MidPos);
-          }
-          if (MidPos+1 < end)
-          {
-             CommonRectificate(data,MidPos,end);
-          }
-       }
 }
 
 void Image_Handle()
@@ -514,8 +584,8 @@ void Image_Handle()
 //        camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
 //        BinThreshold(perspectiveImage);
         findline(perspectiveImage);
-//        CommonRectificate(leftline, Lost_leftline.start.y, Lost_leftline.end.y);
-//        CommonRectificate(leftline, Lost_rightline.start.y, Lost_rightline.end.y);
+        AddLine();
+
 //        FindLineFromOneSide(JudgeLeftorRight());
 
         Draw_Side();
