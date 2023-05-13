@@ -15,6 +15,8 @@ uint8   weightbase[30] = {                        //0为图像最顶行
         10,10,10,10,10,10,10,10,10,10,};    //基础    //注意斜率变化引起的跳变,要平滑
 int weightSum, lineSum, midline_f, midline_ff, midline_fff;
 
+//通过aimline及其下面3行计算偏差
+uint8 aimLine=20;
 
 int16 ServoDuty;
 
@@ -68,8 +70,7 @@ void servo_base_pid()
 
 }
 
-// 计算偏差，通过某三行计算，当车速变快时将无法适用
-#define aimLine 20
+// 计算偏差
 void AngleErr()
 {
     ips200_draw_line(0, MT9V03X_H-1-aimLine, MT9V03X_W, MT9V03X_H-1-aimLine, RGB565_BROWN);

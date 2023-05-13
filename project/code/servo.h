@@ -24,7 +24,10 @@
 // 舵机中值，需要根据实际调SERVO_MOTOR_DUTY中的参数
 #define SERVO_CENTER        90
 
+#define default_aimline 20//默认控制行
+
 extern float Angle;
+extern uint8 aimLine;
 
 void servo_init(void);
 void servo_control();

@@ -10,6 +10,8 @@
 
 #include "imgproc.h"
 
+uint8 max(uint8 a, uint8 b);
+uint8 min(uint8 a, uint8 b);
 int16 Limit_Protect(int16 num, int32 min, int32 max);
 int16 Fit_Point(uint8 i, float Ka, float Kb);
 void Curve1_Fitting(float *Ka, float *Kb, int16 *Start, int16 *Line_Add, int16 Mode);

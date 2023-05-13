@@ -7,6 +7,22 @@
 
 #include "mathh.h"
 
+uint8 max(uint8 a, uint8 b)
+{
+    if(a>b)
+        return a;
+    else
+        return b;
+}
+
+uint8 min(uint8 a, uint8 b)
+{
+    if(a<b)
+        return a;
+    else
+        return b;
+}
+
 /*-------------------------------------------------------------------------------------------------------------------
 函数：限幅保护
 说明：补线时坐标不能小于0，大于边界值

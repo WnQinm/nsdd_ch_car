@@ -22,19 +22,6 @@
 
 typedef struct
 {
-    uint8 x;
-    uint8 y;
-}point;
-
-typedef struct
-{
-    point start;
-    point end;
-    uint8 lost_time;//¶ª±ßÏßÐÐÊý
-}Lost_Edgeline;
-
-typedef struct
-{
     uint8 start_y;
     uint8 end_y;
 }breakpoint;
