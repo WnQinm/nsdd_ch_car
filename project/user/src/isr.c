@@ -320,26 +320,15 @@ void TIM5_IRQHandler(void)
     }
 }
 
+extern void handler();
 void TIM6_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET)
     {
        TIM_ClearITPendingBit(TIM6, TIM_IT_Update );
 
-//       adc_R=adc_mean_filter_convert(ADC1_IN15_C5, 10);
-                       adc_RM=adc_mean_filter_convert(ADC1_IN14_C4, 10);
-                       adc_LM=adc_mean_filter_convert(ADC1_IN13_C3, 10);
-//                       adc_L=adc_mean_filter_convert(ADC1_IN7_A7, 10);
-//           ips200_show_float(0, 100, adc_L, 4, 4);
-           ips200_show_float(0, 120, adc_LM, 4, 4);
-           ips200_show_float(0, 140, adc_RM, 4, 4);
-//           ips200_show_float(0, 160, adc_R, 4, 4);
+       handler();
 
-
-           servo_con();
-//           motor_control(1000, 1000);
-//extern void ceju();
-//ceju();
     }
 }
 

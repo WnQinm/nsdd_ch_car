@@ -8,8 +8,10 @@
 #ifndef QU_H_
 #define QU_H_
 
-void quinit();
-void go();
-void qujiance();
+#include <zf_common_headfile.h>
+#include <zf_device_dm1xa.h>
+
+void quInit();
+void sendLaiQuDistance();
 
 #endif /* QU_H_ */

@@ -8,7 +8,9 @@
 #ifndef LAI_H_
 #define LAI_H_
 
-void laiinit();
-uint16 laishuchu();
+#include <zf_device_dm1xa.h>
+
+void laiInit();
+uint16 laiQuDistanceOutput();
 
 #endif /* LAI_H_ */

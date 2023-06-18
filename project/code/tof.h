@@ -8,8 +8,9 @@
 #ifndef TOF_H_
 #define TOF_H_
 
-void tofinit();
-void ceju();
-uint16 shuchu();
+#include <zf_common_headfile.h>
+
+void tofInit();
+uint16 getDistance();
 
 #endif /* TOF_H_ */
