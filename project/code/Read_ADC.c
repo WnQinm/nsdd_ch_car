@@ -9,7 +9,7 @@
 #include "zf_driver_adc.h"
 
 float ADC_MAX,ADC_MIN;
-uint8 adc_LL,adc_L,adc_R,adc_RR;//电感采集值     |--|
+uint8 adc_LL,adc_L,adc_R,adc_RR;//电感采集值     | - - |
 
 void ADC_init()
 {
