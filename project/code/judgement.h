@@ -11,6 +11,7 @@
 #include "zf_common_headfile.h"
 #include "Read_ADC.h"
 
+// µÀÂ·×´Ì¬Ã¶¾Ù
 typedef enum
 {
     Status_Common = 0,
@@ -21,5 +22,6 @@ void judgement();
 
 extern uint8 left_circle_flag, right_circle_flag, cross_flag;
 extern float circle_threshold, cross_threshold;
+extern uint8 circle_status;
 
 #endif /* JUDGEMENT_H_ */

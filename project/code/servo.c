@@ -9,8 +9,10 @@
 
 #define Kp 15
 #define Kd 0.9
+#define gamma 1e2
 
 float Angle=90;
+float current_err, output;
 float last_err=0;
 
 void servo_init()
@@ -20,15 +22,18 @@ void servo_init()
 
 void servo_control(RaceStatus status)
 {
-    float current_err, output;
-    if(status==Status_Common)
-        current_err = (float)(adc_L-adc_R)/(float)(adc_L+adc_R);
-    else if(status==Status_Circle)
-        current_err = (float)(adc_LL-adc_M)/(float)(adc_LL+adc_M);
+    // todo 引入边界保护后可以去除分母的1
+    switch (status)
+    {
+        case Status_Common:current_err = ((int16)(adc_L-adc_R)<<7)/(adc_L+adc_R+1);break;
+        case Status_Circle:current_err = ((int16)(adc_LL-adc_RR)<<7)/(adc_LL+adc_RR+1);break;
+    }
+
     output = Kp * (current_err + Kd * (current_err - last_err))/100;
     last_err = current_err;
 
-    Angle=90+output;
+    Angle=90+output;// 这应该是Angle+=output但是架不住那样效果好
+
     // 角度限幅
     if(Angle<75) Angle=75;
     if(Angle>105) Angle=105;

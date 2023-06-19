@@ -41,18 +41,100 @@ int main (void)
 void handler()
 {
     Read_ADC();
-//    judgement();
+    judgement();
     if(!left_circle_flag && !right_circle_flag)
         servo_control(Status_Common);
     else
     {
         if(left_circle_flag)
         {
-            // step1 避开第一个断口
-            // step2 第二个断口入环，根据竖电感数值行进
-            // step3 正常巡线
-            // step4 出环（正常巡线应该可以）
-            // step5 出环后第一个断口摄像头循右线持续至adc_M降低到一定阈值
+            static int cnt=0;
+            switch (circle_status)
+            {
+                case 1:// step1 避开第一个断口(正常巡线应该就行)
+                    servo_control(Status_Common);
+                    if(++cnt>100 && adc_LL>circle_threshold)    // 直走半秒
+                    {
+                        circle_status++;
+                        cnt%=100;
+                    }
+                    break;
+                case 2:// step2 第二个断口入环，根据竖电感数值强行扭头入环
+                    servo_control(Status_Circle);
+                    if(++cnt>100)   // 暂定扭半秒头
+                    {
+                        circle_status++;
+                        cnt%=100;
+                    }
+                    break;
+                case 3:// step3 正常巡线
+                    servo_control(Status_Common);
+                    if(adc_RR>circle_threshold)
+                    {
+                        circle_status++;
+                    }
+                    break;
+                case 4:// step4 出环（正常巡线应该可以）
+                    servo_control(Status_Common);
+                    if(adc_LL>circle_threshold)
+                    {
+                        circle_status++;
+                    }
+                    break;
+                case 5:// step5 出环后第一个断口摄像头循右线
+                    servo_control(Status_Common);
+                    if(adc_LL<circle_threshold)
+                    {
+                        circle_status = 0;
+                        left_circle_flag = false;
+                    }
+                    break;
+            }
+        }
+        else
+        {
+            static int cnt=0;
+            switch (circle_status)
+            {
+                case 1:// step1 避开第一个断口(正常巡线应该就行)
+                    servo_control(Status_Common);
+                    if(++cnt>100 && adc_RR>circle_threshold)    // 直走半秒
+                    {
+                        circle_status++;
+                        cnt%=100;
+                    }
+                    break;
+                case 2:// step2 第二个断口入环，根据竖电感数值强行扭头入环
+                    servo_control(Status_Circle);
+                    if(++cnt>100)   // 暂定扭半秒头
+                    {
+                        circle_status++;
+                        cnt%=100;
+                    }
+                    break;
+                case 3:// step3 正常巡线
+                    servo_control(Status_Common);
+                    if(adc_LL>circle_threshold)
+                    {
+                        circle_status++;
+                    }
+                    break;
+                case 4:// step4 出环（正常巡线应该可以）
+                    servo_control(Status_Common);
+                    if(adc_RR>circle_threshold)
+                    {
+                        circle_status++;
+                    }
+                    break;
+                case 5:// step5 出环后第一个断口摄像头循右线
+                    servo_control(Status_Common);
+                    if(adc_RR<circle_threshold)
+                    {
+                        circle_status = 0;
+                        right_circle_flag = false;
+                    }
+                    break;
+            }
         }
     }
 }

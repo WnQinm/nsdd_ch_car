@@ -24,7 +24,7 @@
 
 
 void servo_init();
-void servo_control();
+void servo_control(RaceStatus status);
 
 extern float Angle;
 
