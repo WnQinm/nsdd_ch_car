@@ -26,5 +26,6 @@ void judgement();
 extern uint8 left_circle_flag, right_circle_flag, cross_flag;
 extern uint8 circle_threshold, cross_threshold;
 extern uint8 circle_status;
+extern bool out_flag;
 
 #endif /* JUDGEMENT_H_ */
