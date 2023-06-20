@@ -26,7 +26,7 @@ int main (void)
     pit_ms_init(IMG_PIT_CH, 5);
     interrupt_set_priority(IMG_PIT_PRIORITY, 5);
 
-    motor_control(800,800);
+    motor_control(500,500);
 
     while(1)
     {
@@ -40,30 +40,34 @@ int main (void)
 void handler()
 {
     Read_ADC();
-    judgement();
     if(!left_circle_flag && !right_circle_flag)
+    {
+        judgement();
         servo_control(Status_Common);
+    }
     else
     {
         if(left_circle_flag)
         {
+            ips200_show_string(0, 120, "Status");
+            ips200_show_int(100, 120, circle_status, 5);
             static int cnt=0;
             switch (circle_status)
             {
                 case 1:// step1 避开第一个断口(正常巡线应该就行)
                     servo_control(Status_Common);
-                    if(++cnt>100 && adc_LL>circle_threshold)    // 直走半秒
+                    if(++cnt>150 && adc_LL>circle_threshold)    // 直走一秒
                     {
                         circle_status++;
-                        cnt%=100;
+                        cnt%=150;
                     }
                     break;
                 case 2:// step2 第二个断口入环，根据竖电感数值强行扭头入环
                     servo_control(Status_Circle);
-                    if(++cnt>100)   // 暂定扭半秒头
+                    if(++cnt>400)   // 暂定扭两秒头
                     {
                         circle_status++;
-                        cnt%=100;
+                        cnt%=400;
                     }
                     break;
                 case 3:// step3 正常巡线
@@ -74,16 +78,19 @@ void handler()
                     }
                     break;
                 case 4:// step4 出环（正常巡线应该可以）
-                    servo_control(Status_Common);
-                    if(adc_LL>circle_threshold)
+//                    servo_control(Status_Common);
+                    Angle = 98;
+                    if(++cnt>200 && adc_LL<circle_threshold)
                     {
                         circle_status++;
+                        cnt%=200;
                     }
                     break;
                 case 5:// step5 出环后第一个断口摄像头循右线
                     servo_control(Status_Common);
-                    if(adc_LL<circle_threshold)
+                    if(++cnt>200 && adc_LL<circle_threshold)
                     {
+                        cnt%=200;
                         circle_status = 0;
                         left_circle_flag = false;
                     }
@@ -92,6 +99,8 @@ void handler()
         }
         else
         {
+            ips200_show_string(0, 120, "Status");
+            ips200_show_int(100, 120, circle_status, 5);
             static int cnt=0;
             switch (circle_status)
             {

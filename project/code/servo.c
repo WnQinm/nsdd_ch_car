@@ -33,7 +33,7 @@ void servo_control(RaceStatus status)
     last_err = current_err;
 
     Angle=90+output;// 这应该是Angle+=output但是架不住那样效果好
-
+    ips200_show_float(0, 80, Angle, 5, 5);
     // 角度限幅
     if(Angle<75) Angle=75;
     if(Angle>105) Angle=105;
