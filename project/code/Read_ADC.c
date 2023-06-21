@@ -4,9 +4,7 @@
  *  Created on: 2023年4月17日
  *      Author: Lenovo
  */
-#include <Read_ADC.h>
-#include "zf_common_headfile.h"
-#include "zf_driver_adc.h"
+#include "Read_ADC.h"
 
 float ADC_MAX,ADC_MIN;
 uint16 adc_LL,adc_L,adc_R,adc_RR;//电感采集值     | - - |
@@ -74,9 +72,10 @@ void Read_ADC()
         adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//右竖
         adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//左横
         adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//右横
+        motor_control(0,0);
     }
-    while(adc_LL+adc_RR+adc_L+adc_R<50);
-
+    while(adc_LL+adc_RR+adc_L+adc_R<100);
+    motor_control(600,600);
 //    if ((adc_LL + adc_RR + adc_L + adc_R))
 //        out_flag = true;
 

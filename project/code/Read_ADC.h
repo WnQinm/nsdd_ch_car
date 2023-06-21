@@ -10,6 +10,8 @@
 
 #include "zf_common_headfile.h"
 #include "judgement.h"
+#include "zf_driver_adc.h"
+#include "motor.h"
 // 如果是五路电感，排布应为：竖横竖横竖
 
 void ADC_init();
