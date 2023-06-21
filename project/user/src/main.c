@@ -26,7 +26,7 @@ int main (void)
     pit_ms_init(IMG_PIT_CH, 5);
     interrupt_set_priority(IMG_PIT_PRIORITY, 5);
 
-    motor_control(500,500);
+    motor_control(600,600);
 
     while(1)
     {
@@ -56,7 +56,7 @@ void handler()
             {
                 case 1:// step1 避开第一个断口(正常巡线应该就行)
                     servo_control(Status_Common);
-                    if(++cnt>150 && adc_LL>circle_threshold)    // 直走一秒
+                    if(++cnt>150 && adc_LL>circle_threshold && current_err_circle>current_err_common)    // 直走一秒
                     {
                         circle_status++;
                         cnt%=150;
@@ -72,6 +72,7 @@ void handler()
                     break;
                 case 3:// step3 正常巡线
                     servo_control(Status_Common);
+                    // todo 判断方式改为摄像头检测到某些东西，比如赛道变宽，或者角点之类的，或者增长前瞻的杆子
                     if(adc_RR>circle_threshold)
                     {
                         circle_status++;
@@ -79,6 +80,7 @@ void handler()
                     break;
                 case 4:// step4 出环（正常巡线应该可以）
 //                    servo_control(Status_Common);
+                    // todo 或许可以打一个很短时间的角，然后摄像头循右线
                     Angle = 98;
                     if(++cnt>200 && adc_LL<circle_threshold)
                     {
@@ -86,7 +88,8 @@ void handler()
                         cnt%=200;
                     }
                     break;
-                case 5:// step5 出环后第一个断口摄像头循右线
+                case 5:// step5 出环后
+                    // todo 出环后第一个断口(判断方式可以是宽度变宽或者左竖电感)摄像头继续循右线
                     servo_control(Status_Common);
                     if(++cnt>200 && adc_LL<circle_threshold)
                     {
@@ -106,38 +109,44 @@ void handler()
             {
                 case 1:// step1 避开第一个断口(正常巡线应该就行)
                     servo_control(Status_Common);
-                    if(++cnt>100 && adc_RR>circle_threshold)    // 直走半秒
+                    if(++cnt>150 && adc_RR>circle_threshold)    // 直走一秒
                     {
                         circle_status++;
-                        cnt%=100;
+                        cnt%=150;
                     }
                     break;
                 case 2:// step2 第二个断口入环，根据竖电感数值强行扭头入环
                     servo_control(Status_Circle);
-                    if(++cnt>100)   // 暂定扭半秒头
+                    if(++cnt>400)   // 暂定扭两秒头
                     {
                         circle_status++;
-                        cnt%=100;
+                        cnt%=400;
                     }
                     break;
                 case 3:// step3 正常巡线
                     servo_control(Status_Common);
+                    // todo 判断方式改为摄像头检测到某些东西，比如赛道变宽，或者角点之类的，或者增长前瞻的杆子
                     if(adc_LL>circle_threshold)
                     {
                         circle_status++;
                     }
                     break;
                 case 4:// step4 出环（正常巡线应该可以）
-                    servo_control(Status_Common);
-                    if(adc_RR>circle_threshold)
+//                    servo_control(Status_Common);
+                    // todo 或许可以打一个很短时间的角，然后摄像头循右线
+                    Angle = 82;
+                    if(++cnt>200 && adc_RR<circle_threshold)
                     {
                         circle_status++;
+                        cnt%=200;
                     }
                     break;
-                case 5:// step5 出环后第一个断口摄像头循右线
+                case 5:// step5 出环后
+                    // todo 出环后第一个断口(判断方式可以是宽度变宽或者左竖电感)摄像头继续循右线
                     servo_control(Status_Common);
-                    if(adc_RR<circle_threshold)
+                    if(++cnt>200 && adc_RR<circle_threshold)
                     {
+                        cnt%=200;
                         circle_status = 0;
                         right_circle_flag = false;
                     }

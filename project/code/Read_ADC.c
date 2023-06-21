@@ -67,13 +67,18 @@ void Read_ADC()
 //    adc_RR=adc_mean_filter_convert(ADC1_IN13_C3, 10);//ÓÒÊú
 //    adc_L=adc_mean_filter_convert(ADC1_IN14_C4, 10);//×óºá
 //    adc_R=adc_mean_filter_convert(ADC1_IN15_C5, 10);//ÓÒºá
-    adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN7_A7, 10));//×óÊú
-    adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//ÓÒÊú
-    adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//×óºá
-    adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//ÓÒºá
 
-    if ((adc_LL + adc_RR + adc_L + adc_R))
-        out_flag = true;
+    do
+    {
+        adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN7_A7, 10));//×óÊú
+        adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//ÓÒÊú
+        adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//×óºá
+        adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//ÓÒºá
+    }
+    while(adc_LL+adc_RR+adc_L+adc_R<50);
+
+//    if ((adc_LL + adc_RR + adc_L + adc_R))
+//        out_flag = true;
 
     ips200_show_int(0, 20, adc_LL, 5);
     ips200_show_int(0, 50, adc_L, 5);

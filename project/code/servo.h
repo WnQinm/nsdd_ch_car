@@ -21,11 +21,10 @@
 // 舵机中值，需要根据实际调SERVO_MOTOR_DUTY中的参数
 #define SERVO_CENTER        90
 
-
-
 void servo_init();
 void servo_control(RaceStatus status);
 
 extern float Angle;
+extern float current_err_common, current_err_circle;
 
 #endif /* SERVO_H_ */

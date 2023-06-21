@@ -7,7 +7,7 @@
 #include "judgement.h"
 
 uint8 left_circle_flag=false, right_circle_flag=false, cross_flag=false;
-uint8 circle_threshold=210, cross_threshold;//todo 设置值
+uint8 circle_threshold=150, cross_threshold;//todo 设置值
 uint8 circle_status=0;//环岛处理标志
 bool out_flag = false;
 
