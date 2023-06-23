@@ -8,17 +8,17 @@
 #ifndef JUDGEMENT_H_
 #define JUDGEMENT_H_
 
-#include "zf_common_headfile.h"
-#include "Read_ADC.h"
-
-
 // µÀÂ·×´Ì¬Ã¶¾Ù
 typedef enum
 {
     Status_Common = 0,
-    Status_Circle = 1
+    Status_Circle = 1,
+    Status_Camera = 2
 }RaceStatus;
 
+#include "zf_common_headfile.h"
+#include "Read_ADC.h"
+#include "imgproc.h"
 #include "servo.h"
 
 void judgement();

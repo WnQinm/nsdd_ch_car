@@ -6,9 +6,7 @@
 #include "hall_stopline.h"
 #include "Read_ADC.h"
 #include "judgement.h"
-
-#define IMG_PIT_CH                  (TIM7_PIT )                                      // 使用的周期中断编号 如果修改 需要同步对应修改周期中断编号与 isr.c 中的调用
-#define IMG_PIT_PRIORITY            (TIM7_IRQn)
+#include "pit.h"
 
 int main (void)
 {
@@ -17,18 +15,16 @@ int main (void)
     debug_init();                                                               // 初始化默认 Debug UART
     servo_init();
     motor_init();
+    mt9v03x_init();
 //    quinit();
 //    laiinit();
 //    tofinit();
 //    hallinit();
     ips200_init(IPS200_TYPE_PARALLEL8);
     ADC_init();
-
-    pit_ms_init(IMG_PIT_CH, 5);
-    interrupt_set_priority(IMG_PIT_PRIORITY, 5);
+    Main_pit_init();
 
 //    motor_control(600,600);
-
 
     while(1)
     {
@@ -39,11 +35,36 @@ int main (void)
 
 }
 
+void ips200_show()
+{
+    ips200_show_gray_image(0, 0, mt9v03x_image[0], MT9V03X_W, MT9V03X_H, MT9V03X_W, MT9V03X_H, 0);
+    Draw_Side();
+
+    ips200_show_string(0, 150, "elec ADC value:");
+    ips200_show_int(0, 180, adc_LL, 5);
+    ips200_show_int(40, 180, adc_L, 5);
+    ips200_show_int(80, 180, adc_R, 5);
+    ips200_show_int(120, 180, adc_RR, 5);
+
+    ips200_show_string(0, 210, "corner point:");
+    ips200_show_int(0, 240, LeftBreakpoint.end_y, 4);
+    ips200_show_int(40, 240, RightBreakpoint.end_y, 4);
+    ips200_show_int(0, 270, LeftBreakpoint.start_y, 4);
+    ips200_show_int(40, 270, RightBreakpoint.start_y, 4);
+
+    ips200_show_string(0, 300, "Status");
+    ips200_show_int(100, 300, circle_status, 5);
+    if(cross_flag)
+        ips200_show_string(0, 330, "cross");
+    else if(!cross_flag)
+        ips200_show_string(0, 330, "     ");
+}
+
 void handler()
 {
+    ImageProcess();
     Read_ADC();
-    ips200_show_string(0, 120, "Status");
-    ips200_show_int(100, 120, circle_status, 5);
+
     if(!left_circle_flag && !right_circle_flag)
     {
         judgement();
@@ -147,4 +168,6 @@ void handler()
             }
         }
     }
+
+    ips200_show();
 }

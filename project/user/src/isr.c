@@ -327,7 +327,7 @@ void TIM6_IRQHandler(void)
     {
        TIM_ClearITPendingBit(TIM6, TIM_IT_Update );
 
-
+       handler();
 
     }
 }
@@ -338,7 +338,7 @@ void TIM7_IRQHandler(void)
     {
        TIM_ClearITPendingBit(TIM7, TIM_IT_Update );
 
-       handler();
+
 
     }
 }

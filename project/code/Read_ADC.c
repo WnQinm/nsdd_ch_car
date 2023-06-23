@@ -79,9 +79,5 @@ void Read_ADC()
 //    if ((adc_LL + adc_RR + adc_L + adc_R))
 //        out_flag = true;
 
-    ips200_show_int(0, 20, adc_LL, 5);
-    ips200_show_int(0, 50, adc_L, 5);
-    ips200_show_int(50, 50, adc_R, 5);
-    ips200_show_int(50, 20, adc_RR, 5);
 }
 

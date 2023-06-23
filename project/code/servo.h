@@ -11,6 +11,8 @@
 #include "zf_common_headfile.h"
 #include "Read_ADC.h"
 #include "judgement.h"
+#include "imgproc.h"
+#include "mathh.h"
 
 #define SERVO_MOTOR_FREQ 50
 
@@ -21,8 +23,14 @@
 // 舵机中值，需要根据实际调SERVO_MOTOR_DUTY中的参数
 #define SERVO_CENTER        90
 
+
+#define default_aimline ROW-1-30//默认控制行
+
+
 void servo_init();
 void servo_control(RaceStatus status);
+void elec_pid(float current_err);
+void camera_pid(float current_err);
 
 extern float Angle;
 extern float current_err_common, current_err_circle;
