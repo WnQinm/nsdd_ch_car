@@ -6,7 +6,7 @@
  */
 #include "Read_ADC.h"
 
-float ADC_MAX,ADC_MIN;
+float ADC_MAX = 235,ADC_MIN = 0;
 uint16 adc_LL,adc_L,adc_R,adc_RR;//电感采集值     | - - |
 kalman_param kfp0, kfp1, kfp2, kfp3;
 
@@ -58,9 +58,14 @@ int kalman_filter(kalman_param *kfp, uint16 input)
      return kfp->out;
 }
 
+uint16 Normal(uint16 adc_val)
+{
+    return (adc_val*1.0/ADC_MAX)*100;
+}
+
 void Read_ADC()
 {
-    // todo 限幅
+
 //    adc_LL=adc_mean_filter_convert(ADC1_IN12_C2, 10);//左竖
 //    adc_RR=adc_mean_filter_convert(ADC1_IN13_C3, 10);//右竖
 //    adc_L=adc_mean_filter_convert(ADC1_IN14_C4, 10);//左横
@@ -75,6 +80,13 @@ void Read_ADC()
         motor_control(0,0);
     }
     while(adc_LL+adc_RR+adc_L+adc_R<100);
+
+    adc_LL = Normal(adc_LL);
+    adc_L = Normal(adc_L);
+    adc_R = Normal(adc_R);
+    adc_RR = Normal(adc_RR);
+
+    // todo
     motor_control(600,600);
 //    if ((adc_LL + adc_RR + adc_L + adc_R))
 //        out_flag = true;

@@ -320,26 +320,32 @@ void TIM5_IRQHandler(void)
     }
 }
 
-extern void handler();
+#include "servo.h"
 void TIM6_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET)
     {
        TIM_ClearITPendingBit(TIM6, TIM_IT_Update );
 
-       handler();
+       servo_control(CURRENT_STATUS);
 
     }
 }
 
+extern void elec_handler();
+//extern void img_handler();
+extern void ips200_show();
 void TIM7_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM7, TIM_IT_Update) != RESET)
     {
        TIM_ClearITPendingBit(TIM7, TIM_IT_Update );
 
-
-
+//       static uint8 isr_cnt = 0;
+//       if(++isr_cnt>=12)
+//           img_handler();
+       elec_handler();
+       ips200_show();
     }
 }
 

@@ -9,8 +9,8 @@
 
 uint8 rightline[MT9V03X_H], leftline[MT9V03X_H];//rightline：右线，leftline：左线
 uint8 road_width[MT9V03X_H], centerline[MT9V03X_H];//road_width：道路宽度，centerline：道路中线
-uint8 bin_image[MT9V03X_H][MT9V03X_W];//图像数组
-uint8 perspectiveImage[MT9V03X_H][MT9V03X_W];//逆透视之后数组
+uint8 bin_image[ROW][COL];//图像数组
+uint8 perspectiveImage[ROW][COL];//逆透视之后数组
 
 breakpoint LeftBreakpoint, RightBreakpoint;//这里的角点是从下向上看的，所以start指下面那个角点
 uint8 mid=COL/2;//车车插电后第一张图最下行扫线起点
@@ -87,41 +87,13 @@ uint8 otsuThreshold(uint8 *image, uint16 col, uint16 row)
    return Threshold;
 }
 
-void ImagePerspective_Init(uint8 BinImage[MT9V03X_H][MT9V03X_W], uint8 ResultImage[MT9V03X_H][MT9V03X_W])
-{
-    // big car
-//    float change_un_Mat[3][3] ={{-0.372183,0.311193,-17.394046},{-0.000000,0.062291,-27.858094},{-0.000000,0.003576,-0.599369}};
-
-    // small car
-    float change_un_Mat[3][3] ={{0.346837,-0.262261,11.624627},{0.003201,0.049002,10.329604},{0.000087,-0.002744,0.470399}};
-    for (int i = 0; i < COL ;i++) {
-        for (int j = 0; j < ROW ;j++) {
-            int local_x = (int) ((change_un_Mat[0][0] * i
-                    + change_un_Mat[0][1] * j + change_un_Mat[0][2])
-                    / (change_un_Mat[2][0] * i + change_un_Mat[2][1] * j
-                            + change_un_Mat[2][2]));
-            int local_y = (int) ((change_un_Mat[1][0] * i
-                    + change_un_Mat[1][1] * j + change_un_Mat[1][2])
-                    / (change_un_Mat[2][0] * i + change_un_Mat[2][1] * j
-                            + change_un_Mat[2][2]));
-            if (local_x> 0&& local_y > 0 && local_y < MT9V03X_H-1 && local_x < MT9V03X_W-1){
-                ResultImage[j][i] = BinImage[local_y][local_x];
-            }
-            else {
-                ResultImage[j][i] = black;
-            }
-        }
-    }
-}
-
 /*
  * 图像二值化函数（大津法），使用后直接调用bin_image使用
  */
-void turn_to_bin(uint8 raw_image[MT9V03X_H][MT9V03X_W], uint8 image_w, uint8 image_h)
+void turn_to_bin(uint8 raw_image[MT9V03X_H/2][MT9V03X_W/2], uint8 image_w, uint8 image_h, int thereshold)
 {
     uint8 i,j;
-//    uint16 temp;
-    int thereshold = otsuThreshold(raw_image[0], image_w, image_h);
+//    int thereshold = otsuThreshold(raw_image[0], image_w, image_h);
     for(i = 0;i<image_h;i++)
     {
         for(j = 0;j<image_w;j++)
@@ -135,6 +107,49 @@ void turn_to_bin(uint8 raw_image[MT9V03X_H][MT9V03X_W], uint8 image_w, uint8 ima
     }
 }
 
+void halve_image(unsigned char *p_in,unsigned char  *p_out,unsigned char row,unsigned char col, int thereshold) //图像减半
+{
+
+   uint8 i, j;
+   for (i = 0; i<row/2; i++)
+   {
+      for (j = 0;j<col/2; j++)
+      {
+         *(p_out+i*col/2+j)=*(p_in+i*2*col+j*2);
+         *(p_out+i*col/2+j) = *(p_out+i*col/2+j)<thereshold?black:white;
+      }
+   }
+
+}
+
+void inverse_perspective(uint8 InputImage[ROW][COL], uint8 ResultImage[ROW][COL])
+{
+
+    // big car
+    double change_un_Mat[3][3] ={{-0.675083,0.652094,-23.148424},{0.063251,0.162263,-31.454260},{0.001216,0.013927,-1.231693}};
+    // small car
+//    float change_un_Mat[3][3] ={{0.346837,-0.262261,11.624627},{0.003201,0.049002,10.329604},{0.000087,-0.002744,0.470399}};
+    for (int i = 0; i < COL ;i++) {
+        for (int j = 0; j < ROW ;j++) {
+
+            int local_x = (int) ((change_un_Mat[0][0] * i
+                    + change_un_Mat[0][1] * j + change_un_Mat[0][2])
+                    / (change_un_Mat[2][0] * i + change_un_Mat[2][1] * j
+                            + change_un_Mat[2][2]));
+            int local_y = (int) ((change_un_Mat[1][0] * i
+                    + change_un_Mat[1][1] * j + change_un_Mat[1][2])
+                    / (change_un_Mat[2][0] * i + change_un_Mat[2][1] * j
+                            + change_un_Mat[2][2]));
+            if (local_x> 0&& local_y > 0 && local_y < MT9V03X_H-1 && local_x < MT9V03X_W-1){
+                ResultImage[j][i] = InputImage[local_y][local_x];
+            }
+            else {
+                ResultImage[j][i] = black;
+            }
+
+        }
+    }
+}
 
 void findline(uint8 image[ROW][COL])
 {
@@ -312,13 +327,14 @@ void Draw_Side()
 
 void ImageProcess()
 {
-    turn_to_bin(mt9v03x_image, MT9V03X_W, MT9V03X_H);
-    ImagePerspective_Init(bin_image, perspectiveImage);
-    ImageFilter(perspectiveImage);
+    int thereshold = otsuThreshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H);
+    halve_image(mt9v03x_image[0], bin_image[0], MT9V03X_H, MT9V03X_W, thereshold);
+    inverse_perspective(bin_image, perspectiveImage);
+//    ImageFilter(perspectiveImage);
 
 //    bluetooth_ch9141_send_image((const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
 //    camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
-    findline(perspectiveImage);
+//    findline(perspectiveImage);
     // todo 想用来识别比较极限的弯道来着,先试试调小摄像头角度，aimline调远
     //    ips200_show_float(0, 200, (rightline[default_aimline]-rightline[ROW-1])/(default_aimline-ROW+1.0), 8, 6);
 }

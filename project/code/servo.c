@@ -41,12 +41,12 @@ void servo_control(RaceStatus status)
 
     switch (status)
     {
+        case Status_Stop:return;
         case Status_Common:elec_pid(current_err_common);break;
         case Status_Circle:elec_pid(current_err_circle);break;
         case Status_Camera:camera_pid(current_err_camera);break;
     }
 
-    ips200_show_float(0, 80, Angle, 5, 5);
     // ╫г╤хоч╥Ы
     if(Angle<75) Angle=75;
     if(Angle>105) Angle=105;

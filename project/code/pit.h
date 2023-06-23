@@ -13,6 +13,9 @@
 #define MAIN_PIT_CH                  (TIM6_PIT)                                      // 使用的周期中断编号 如果修改 需要同步对应修改周期中断编号与 isr.c 中的调用
 #define MAIN_PIT_PRIORITY            (TIM6_IRQn)                                      // 对应周期中断的中断编号
 
+#define IMG_PIT_CH                  (TIM7_PIT)
+#define IMG_PIT_PRIORITY            (TIM7_IRQn)
+
 #define GET_VELOCITY_INTERVAL            50
 #define ENCODER_PIT_CH                  (TIM3_PIT )                                      // 使用的周期中断编号 如果修改 需要同步对应修改周期中断编号与 isr.c 中的调用
 #define ENCODER_PIT_PRIORITY            (TIM3_IRQn)                                      // 对应周期中断的中断编号
@@ -29,8 +32,6 @@
 #define ADC_BATTERY_PIT_PRIORITY       (TIM5_IRQn)
 #define GET_BATTERY_VOLTAGE_INTERVAL      5000
 
-void Main_pit_init();
-void Encoder_pit_init();
-void ADC_Battery_pit_init();
+void ALL_pit_init();
 
 #endif /* PIT_H_ */

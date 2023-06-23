@@ -6,8 +6,10 @@
  */
 #include "judgement.h"
 
+RaceStatus CURRENT_STATUS = Status_Common;
+
 uint8 left_circle_flag=false, right_circle_flag=false, cross_flag=false;
-uint8 circle_threshold=150, cross_threshold=150;//todo 设置值
+uint8 circle_threshold=64, cross_threshold=64;//todo 设置值
 uint8 circle_status=0;//环岛处理标志
 bool out_flag = false;
 
@@ -16,11 +18,12 @@ uint8 cross_cnt = 0;
 void judgement()
 {
 
-    if(!cross_flag && adc_LL>cross_threshold && adc_RR>cross_threshold)
+    if(!cross_flag && cross_cnt>=200 && adc_LL>cross_threshold && adc_RR>cross_threshold)
     {// 入十字判断
         cross_flag = true;
+        cross_cnt%=200;
     }
-    else if(cross_flag && ++cross_cnt>=200 && adc_LL>cross_threshold && adc_RR>cross_threshold)
+    else if(cross_flag && cross_cnt>=200 && adc_LL>cross_threshold && adc_RR>cross_threshold)
     {// 出十字判断
         cross_flag = false;
         cross_cnt%=200;
@@ -36,8 +39,7 @@ void judgement()
         circle_status = 1;
     }
 
-
-    if(cross_flag && cross_cnt<200)
+    if(cross_cnt<=200)
         cross_cnt++;
 
 }

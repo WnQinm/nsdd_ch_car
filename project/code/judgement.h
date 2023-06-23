@@ -11,9 +11,10 @@
 // µÀÂ·×´Ì¬Ã¶¾Ù
 typedef enum
 {
-    Status_Common = 0,
-    Status_Circle = 1,
-    Status_Camera = 2
+    Status_Stop   = 0,
+    Status_Common = 1,
+    Status_Circle = 2,
+    Status_Camera = 3
 }RaceStatus;
 
 #include "zf_common_headfile.h"
@@ -23,9 +24,12 @@ typedef enum
 
 void judgement();
 
+extern RaceStatus CURRENT_STATUS;
+
 extern uint8 left_circle_flag, right_circle_flag, cross_flag;
 extern uint8 circle_threshold, cross_threshold;
 extern uint8 circle_status;
+extern uint8 cross_cnt;
 extern bool out_flag;
 
 #endif /* JUDGEMENT_H_ */
