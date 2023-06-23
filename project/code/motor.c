@@ -5,14 +5,10 @@
  *      Author: Lenovo
  */
 #include "motor.h"
-#include "zf_common_headfile.h"
 
-//初始化电机PWM引脚和方向引脚
-#define MOTOR1_A   D12                      // 定义1电机正反转引脚
-#define MOTOR1_B   TIM4_PWM_MAP1_CH2_D13         // 定义1电机PWM引脚
-
-#define MOTOR2_A   D15                      // 定义2电机正反转引脚
-#define MOTOR2_B   TIM4_PWM_MAP1_CH3_D14         // 定义2电机PWM引脚
+float v1=0; //左轮速度
+float v2=0; //右轮速度
+float pulseCount_1, pulseCount_2;
 
 void motor_init(void)
 {
@@ -25,11 +21,16 @@ void motor_init(void)
     pwm_init(MOTOR2_B, 17000, 0);
 }
 
-void motor_pid(int16 encoder, int16 expect_speed)
-{
+void getVelocity(float interval){
+    pulseCount_1 = encoder_get_count(ENCODER_1)/5;//(float)abs();// 获取编码器计数
+    pulseCount_2 = -encoder_get_count(ENCODER_2)/5;//(float)abs();// 获取编码器计数
 
+    encoder_clear_count(ENCODER_1);// 清空编码器计数
+    encoder_clear_count(ENCODER_2);// 清空编码器计数
+
+    v1=(pulseCount_1*1.0f/1024 * 9.42)/interval *10;
+    v2=(pulseCount_2*1.0f/1024 * 9.42)/interval *10;
 }
-
 
 void motor_control(int32 duty_1, int32 duty_2)
 {
@@ -62,8 +63,30 @@ void motor_control(int32 duty_1, int32 duty_2)
         gpio_set_level(MOTOR2_A, 1);
         pwm_set_duty(MOTOR2_B, -duty_2);
     }
-
-
 }
 
+int16 Motor_Bias, Motor_Last_Bias, IntegrationM; // 电机所用参数
+int16 M_P=  -1;//-50
+int16 M_D=0 ;
+int16 M_I= 0;//-6 -1
+int16 velocity= -71;//电机pid参数  -10 - -40
+int16 velocity1= -55;//电机pid参数  -10 - -40
+int16 velocity2= -67;//电机pid参数  -10 - -40
 
+int16 MotorPI (int16 Encoder,int16 Target)
+{
+    static int16 PwmMotor=0;
+
+    Motor_Bias = Encoder + Target;                   // 计算偏差
+    IntegrationM+=Motor_Bias;
+    if(IntegrationM<-300)      IntegrationM=-300;   //限幅
+    else if(IntegrationM>300)  IntegrationM= 300;   //限幅
+    PwmMotor = M_D * (Motor_Bias - Motor_Last_Bias) + M_P * Motor_Bias +M_I*IntegrationM; // 增量式PI控制器
+
+    if(PwmMotor > 2000) PwmMotor = 2000;               // 限幅,等待更细的调试
+    else if(PwmMotor < -2000)PwmMotor = -2000;         // 限幅
+
+    Motor_Last_Bias = Motor_Bias;              // 保存上一次偏差
+
+    return PwmMotor; // 增量输出
+}

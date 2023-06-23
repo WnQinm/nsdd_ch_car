@@ -71,25 +71,25 @@ void Read_ADC()
 //    adc_L=adc_mean_filter_convert(ADC1_IN14_C4, 10);//×óºá
 //    adc_R=adc_mean_filter_convert(ADC1_IN15_C5, 10);//ÓÒºá
 
-    do
-    {
-        adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN7_A7, 10));//×óÊú
-        adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//ÓÒÊú
-        adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//×óºá
-        adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//ÓÒºá
-        motor_control(0,0);
-    }
-    while(adc_LL+adc_RR+adc_L+adc_R<100);
+//    do
+//    {
+    adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN7_A7, 10));//×óÊú
+    adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//ÓÒÊú
+    adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//×óºá
+    adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//ÓÒºá
+//        motor_control(0,0);
+//    }
+//    while(adc_LL+adc_RR+adc_L+adc_R<100);
 
     adc_LL = Normal(adc_LL);
     adc_L = Normal(adc_L);
     adc_R = Normal(adc_R);
     adc_RR = Normal(adc_RR);
 
-    // todo
-    motor_control(600,600);
-//    if ((adc_LL + adc_RR + adc_L + adc_R))
-//        out_flag = true;
+    if ((adc_LL + adc_RR + adc_L + adc_R)<100)
+        out_flag = true;
+    else
+        out_flag = false;
 
 }
 

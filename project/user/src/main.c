@@ -22,6 +22,10 @@ int main (void)
 //    hallinit();
     ips200_init(IPS200_TYPE_PARALLEL8);
     ADC_init();
+
+    encoder_quad_init(ENCODER_1, ENCODER_1_A, ENCODER_1_B);                     // 初始化编码器模块与引脚 正交解码编码器模式
+    encoder_quad_init(ENCODER_2, ENCODER_2_A, ENCODER_2_B);                     // 初始化编码器模块与引脚 正交解码编码器模式
+
     ALL_pit_init();
 
 //    motor_control(600,600);
@@ -51,9 +55,15 @@ void ips200_show()
     ips200_show_int(80, 170, adc_R, 5);
     ips200_show_int(120, 170, adc_RR, 5);
 
+    // motor pid
+//    ips200_show_float(0, 190, v1, 5, 5);
+//    ips200_show_float(100, 190, v2, 5, 5);
+//    ips200_show_int(0, 210, pulseCount_1, 5);
+//    ips200_show_int(100, 210, pulseCount_2, 5);
+//    ips200_show_int(0, 230, MotorPI(pulseCount_1, -55), 5);
+//    ips200_show_int(100, 230, MotorPI(pulseCount_2, -55), 5);
 
-//    ips200_show_int(0, 200, cross_cnt, 5);
-
+    // camera data
 //    ips200_show_string(0, 190, "corner point:");
 //    ips200_show_int(0, 210, LeftBreakpoint.end_y, 4);
 //    ips200_show_int(40, 210, RightBreakpoint.end_y, 4);

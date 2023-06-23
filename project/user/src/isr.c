@@ -321,6 +321,7 @@ void TIM5_IRQHandler(void)
 }
 
 #include "servo.h"
+#include "motor.h"
 void TIM6_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET)
@@ -328,6 +329,10 @@ void TIM6_IRQHandler(void)
        TIM_ClearITPendingBit(TIM6, TIM_IT_Update );
 
        servo_control(CURRENT_STATUS);
+       if(!out_flag)
+           motor_control(600, 600);
+       else
+           motor_control(0, 0);
 
     }
 }
