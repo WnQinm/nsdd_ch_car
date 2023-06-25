@@ -7,35 +7,28 @@
 
 #include "imgproc.h"
 
-uint8 rightline[MT9V03X_H], leftline[MT9V03X_H];//rightline：右线，leftline：左线
-uint8 road_width[MT9V03X_H], centerline[MT9V03X_H];//road_width：道路宽度，centerline：道路中线
-uint8 bin_image[ROW][COL];//图像数组
-uint8 perspectiveImage[ROW][COL];//逆透视之后数组
+uint8 rightline[ROW+2], leftline[ROW+2];//rightline：右线，leftline：左线
+uint8 road_width[ROW+2], centerline[ROW+2];//road_width：道路宽度，centerline：道路中线
+uint8 bin_image[MT9V03X_H][MT9V03X_W];//图像数组
+uint8 _img[RESULT_ROW][RESULT_COL];
 
 breakpoint LeftBreakpoint, RightBreakpoint;//这里的角点是从下向上看的，所以start指下面那个角点
 uint8 mid=COL/2;//车车插电后第一张图最下行扫线起点
 uint8 lostline_cnt = 0;
 
-uint8 otsuThreshold(uint8 *image, uint16 col, uint16 row)
+uint8 *PerImg_ip[RESULT_ROW][RESULT_COL];
+uint8 otsu_thereshold;
+
+uint8 otsu(uint8* data, uint16 Image_Width, uint16 Image_Height)
 {
-#define GrayScale 256
-    uint16 Image_Width  = col;
-    uint16 Image_Height = row;
+    #define GrayScale 256
     int X; uint16 Y;
-    uint8* data = image;
-    int HistGram[GrayScale] = {0};
+    int HistGram[GrayScale];
 
-    uint32 Amount = 0;
-    uint32 PixelBack = 0;
-    uint32 PixelIntegralBack = 0;
-    uint32 PixelIntegral = 0;
-    int32 PixelIntegralFore = 0;
-    int32 PixelFore = 0;
-    double OmegaBack=0, OmegaFore=0, MicroBack=0, MicroFore=0, SigmaB=0, Sigma=0; // 类间方差;
-    uint8 MinValue=0, MaxValue=0;
-    uint8 Threshold = 0;
-
-
+    for (Y = 0; Y < GrayScale; Y++)
+    {
+        HistGram[Y] = 0; //初始化灰度直方图
+    }
     for (Y = 0; Y <Image_Height; Y++) //Y<Image_Height改为Y =Image_Height；以便进行 行二值化
     {
         //Y=Image_Height;
@@ -44,6 +37,18 @@ uint8 otsuThreshold(uint8 *image, uint16 col, uint16 row)
         HistGram[(int)data[Y*Image_Width + X]]++; //统计每个灰度值的个数信息
         }
     }
+
+    uint32 Amount = 0;
+    uint32 PixelBack = 0;
+    uint32 PixelIntegralBack = 0;
+    uint32 PixelIntegral = 0;
+    int32 PixelIntegralFore = 0;
+    int32 PixelFore = 0;
+    double OmegaBack=0, OmegaFore=0, MicroBack=0, MicroFore=0, SigmaB=0, Sigma=0; // 类间方差;
+    int16 MinValue=0, MaxValue=0;
+    uint8 Threshold = 0;
+
+
     for (MinValue = 0; MinValue < 256 && HistGram[MinValue] == 0; MinValue++) ;        //获取最小灰度的值
     for (MaxValue = 255; MaxValue > MinValue && HistGram[MinValue] == 0; MaxValue--) ; //获取最大灰度的值
 
@@ -81,25 +86,24 @@ uint8 otsuThreshold(uint8 *image, uint16 col, uint16 row)
           if (Sigma > SigmaB)//遍历最大的类间方差g
           {
               SigmaB = Sigma;
-              Threshold = (uint8)Y;
+              Threshold = Y;
           }
     }
-   return Threshold;
+    return Threshold;
 }
 
 /*
  * 图像二值化函数（大津法），使用后直接调用bin_image使用
  */
-void turn_to_bin(uint8 raw_image[MT9V03X_H/2][MT9V03X_W/2], uint8 image_w, uint8 image_h, int thereshold)
+void turn_to_bin(uint8 image_w, uint8 image_h, uint8 thereshold)
 {
     uint8 i,j;
-//    int thereshold = otsuThreshold(raw_image[0], image_w, image_h);
     for(i = 0;i<image_h;i++)
     {
         for(j = 0;j<image_w;j++)
         {
             // 二值化
-            if(raw_image[i][j]>thereshold)
+            if((perspectiveImage[i][j])>thereshold)//(perspectiveImage[i][j])
                 bin_image[i][j] = white;
             else
                 bin_image[i][j] = black;
@@ -107,31 +111,14 @@ void turn_to_bin(uint8 raw_image[MT9V03X_H/2][MT9V03X_W/2], uint8 image_w, uint8
     }
 }
 
-void halve_image(unsigned char *p_in,unsigned char  *p_out,unsigned char row,unsigned char col, int thereshold) //图像减半
+void ImagePerspective_Init(void)
 {
-
-   uint8 i, j;
-   for (i = 0; i<row/2; i++)
-   {
-      for (j = 0;j<col/2; j++)
-      {
-         *(p_out+i*col/2+j)=*(p_in+i*2*col+j*2);
-         *(p_out+i*col/2+j) = *(p_out+i*col/2+j)<thereshold?black:white;
-      }
-   }
-
-}
-
-void inverse_perspective(uint8 InputImage[ROW][COL], uint8 ResultImage[ROW][COL])
-{
-
-    // big car
-    double change_un_Mat[3][3] ={{-0.675083,0.652094,-23.148424},{0.063251,0.162263,-31.454260},{0.001216,0.013927,-1.231693}};
-    // small car
-//    float change_un_Mat[3][3] ={{0.346837,-0.262261,11.624627},{0.003201,0.049002,10.329604},{0.000087,-0.002744,0.470399}};
-    for (int i = 0; i < COL ;i++) {
-        for (int j = 0; j < ROW ;j++) {
-
+    static uint8 BlackColor = 0;
+    double change_un_Mat[3][3] ={{-1.249200,1.007972,-26.999219},{-0.098009,0.294157,-41.195868},{-0.001661,0.011368,-0.857782}};
+    for (int i = 0; i < RESULT_COL ;i++)
+    {
+        for (int j = 0; j < RESULT_ROW ;j++)
+        {
             int local_x = (int) ((change_un_Mat[0][0] * i
                     + change_un_Mat[0][1] * j + change_un_Mat[0][2])
                     / (change_un_Mat[2][0] * i + change_un_Mat[2][1] * j
@@ -140,18 +127,19 @@ void inverse_perspective(uint8 InputImage[ROW][COL], uint8 ResultImage[ROW][COL]
                     + change_un_Mat[1][1] * j + change_un_Mat[1][2])
                     / (change_un_Mat[2][0] * i + change_un_Mat[2][1] * j
                             + change_un_Mat[2][2]));
-            if (local_x> 0&& local_y > 0 && local_y < MT9V03X_H-1 && local_x < MT9V03X_W-1){
-                ResultImage[j][i] = InputImage[local_y][local_x];
+            if (local_x >= 0&& local_y >= 0 && local_y < USED_ROW && local_x < USED_COL)
+            {
+                PerImg_ip[j][i] = &PER_IMG[local_y][local_x];
             }
-            else {
-                ResultImage[j][i] = black;
+            else
+            {
+                PerImg_ip[j][i] = &BlackColor;
             }
-
         }
     }
 }
 
-void findline(uint8 image[ROW][COL])
+void findline()
 {
     // 丢线信息初始化
     LeftBreakpoint.start_y = 255;
@@ -168,7 +156,7 @@ void findline(uint8 image[ROW][COL])
             leftline[ROW-1] = 0;
             break;
         }
-        if(image[ROW-1][col-1]==black && image[ROW-1][col]==black && image[ROW-1][col+1]==white)
+        if(_img[ROW-1][col-1]==black && _img[ROW-1][col]==black && _img[ROW-1][col+1]==white)
         {
             leftline[ROW-1] = col;
             break;
@@ -182,7 +170,7 @@ void findline(uint8 image[ROW][COL])
             rightline[ROW-1] = COL-1;
             break;
         }
-        if(image[ROW-1][col-1]==white && image[ROW-1][col]==black && image[ROW-1][col+1]==black)
+        if(_img[ROW-1][col-1]==white && _img[ROW-1][col]==black && _img[ROW-1][col+1]==black)
         {
             rightline[ROW-1] = col;
             break;
@@ -204,7 +192,7 @@ void findline(uint8 image[ROW][COL])
                 break;
             }
 
-            if(image[row][col-1]==black && image[row][col]==black && image[row][col+1]==white)
+            if(_img[row][col-1]==black && _img[row][col]==black && _img[row][col+1]==white)
             {
                 leftline[row] = col;
                 break;
@@ -220,7 +208,7 @@ void findline(uint8 image[ROW][COL])
                 break;
             }
 
-            if(image[row][col-1]==white && image[row][col]==black && image[row][col+1]==black)
+            if(_img[row][col-1]==white && _img[row][col]==black && _img[row][col+1]==black)
             {
                 rightline[row] = col;
                 break;
@@ -239,7 +227,7 @@ void findline(uint8 image[ROW][COL])
     }
 
     // todo 异常很多行变宽,可能是拐弯处之类的赛道都在图像下方
-    if(lostline_cnt>Road_Width_Min+10)
+    if(lostline_cnt>Road_Width_Min+5)
         lostline_cnt = 0;
 
     for(int row=ROW-2;row>SearchLineEndRow-1;row--)//只记录第一次丢线
@@ -257,35 +245,16 @@ void findline(uint8 image[ROW][COL])
                 RightBreakpoint.end_y=row;
         }
     }
-
-
 }
 
-
-// 清除噪点
-void ImageFilter(unsigned char imageInput[MT9V03X_H][MT9V03X_W])
+bool IsBlack(uint8 pixel)
 {
-    uint16 temp = 0;
-    for(int i = 1; i < MT9V03X_H - 1; i++)
-    {
-        for(int j = 1; j < MT9V03X_W - 1; j++)
-        {
-            temp = imageInput[i-1][j-1] + imageInput[i-1][j] + imageInput[i-1][j+1] +
-                   imageInput[i  ][j-1] + imageInput[i  ][j] + imageInput[i  ][j+1] +
-                   imageInput[i+1][j-1] + imageInput[i+1][j] + imageInput[i+1][j+1];
-
-            /* 邻域内5个点是边沿 则保留该点 可以调节这里优化滤波效果 */
-            if(temp > 4*255)
-            {
-                imageInput[i][j] = 255;
-            }
-            else
-            {
-                imageInput[i][j] = 0;
-            }
-        }
-    }
+    if(pixel>otsu_thereshold)
+        return false;
+    else
+        return true;
 }
+
 
 void track_Left_Line()
 {
@@ -302,23 +271,26 @@ void track_Right_Line()
     {
         int tmp = rightline[row] - (Road_Width_Min/2);
         centerline[row] = limit(tmp, COL-1, 0);
-
     }
 }
 
 // 画边线
 void Draw_Side()
 {
-    for(uint8 row = 0; row<MT9V03X_H; row++)
+    for(uint8 row = 0; row<RESULT_ROW; row++)
     {
         if(leftline[row]<0)
             leftline[row] = 0;
-        if(leftline[row]>=MT9V03X_W)
+        else if(leftline[row]>=MT9V03X_W)
             leftline[row] = MT9V03X_W-1;
         if(rightline[row]<0)
             rightline[row] = 0;
-        if(rightline[row]>=MT9V03X_W)
+        else if(rightline[row]>=MT9V03X_W)
             rightline[row] = MT9V03X_W-1;
+        if(centerline[row]<0)
+            centerline[row] = 0;
+        else if(centerline[row]>=MT9V03X_W)
+            centerline[row] = MT9V03X_W-1;
         ips200_draw_point(leftline[row], row, RGB565_BLUE);
         ips200_draw_point(rightline[row], row, RGB565_BLUE);
         ips200_draw_point(centerline[row], row, RGB565_RED);
@@ -327,14 +299,17 @@ void Draw_Side()
 
 void ImageProcess()
 {
-    int thereshold = otsuThreshold(mt9v03x_image[0], MT9V03X_W, MT9V03X_H);
-    halve_image(mt9v03x_image[0], bin_image[0], MT9V03X_H, MT9V03X_W, thereshold);
-    inverse_perspective(bin_image, perspectiveImage);
-//    ImageFilter(perspectiveImage);
+    // 0ms+
+    for(uint8 num=0;num<MT9V03X_H;num++)
+       memcpy(bin_image[num],mt9v03x_image[num],MT9V03X_W);
 
-//    bluetooth_ch9141_send_image((const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
-//    camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
-//    findline(perspectiveImage);
-    // todo 想用来识别比较极限的弯道来着,先试试调小摄像头角度，aimline调远
-    //    ips200_show_float(0, 200, (rightline[default_aimline]-rightline[ROW-1])/(default_aimline-ROW+1.0), 8, 6);
+    // +-10ms
+    otsu_thereshold = otsu(bin_image[0], MT9V03X_W, MT9V03X_H);
+    // 4-5ms
+    turn_to_bin(RESULT_COL, RESULT_ROW, otsu_thereshold);
+
+    for(uint8 num=0;num<RESULT_ROW;num++)
+       memcpy(_img[num],bin_image[num],RESULT_COL);
+
+    findline();
 }

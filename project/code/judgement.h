@@ -29,7 +29,7 @@ extern RaceStatus CURRENT_STATUS;
 extern uint8 left_circle_flag, right_circle_flag, cross_flag;
 extern uint8 circle_threshold, cross_threshold;
 extern uint8 circle_status;
-extern uint8 cross_cnt;
+extern uint16 cross_cnt;
 extern bool out_flag;
 
 #endif /* JUDGEMENT_H_ */

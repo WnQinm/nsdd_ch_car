@@ -322,35 +322,28 @@ void TIM5_IRQHandler(void)
 
 #include "servo.h"
 #include "motor.h"
+extern void elec_handler();
 void TIM6_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET)
     {
        TIM_ClearITPendingBit(TIM6, TIM_IT_Update );
 
+       elec_handler();
+
        servo_control(CURRENT_STATUS);
-       if(!out_flag)
-           motor_control(600, 600);
-       else
-           motor_control(0, 0);
 
     }
 }
 
-extern void elec_handler();
 //extern void img_handler();
-extern void ips200_show();
 void TIM7_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM7, TIM_IT_Update) != RESET)
     {
        TIM_ClearITPendingBit(TIM7, TIM_IT_Update );
 
-//       static uint8 isr_cnt = 0;
-//       if(++isr_cnt>=12)
-//           img_handler();
-       elec_handler();
-       ips200_show();
+//       img_handler();
     }
 }
 

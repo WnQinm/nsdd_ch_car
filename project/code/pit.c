@@ -10,13 +10,13 @@
 
 void Main_pit_init()
 {
-    pit_ms_init(MAIN_PIT_CH, 5);
-    interrupt_set_priority(MAIN_PIT_PRIORITY, (5<<5)|5);
+    pit_us_init(MAIN_PIT_CH, 500);
+    interrupt_set_priority(MAIN_PIT_PRIORITY, (4<<5)|5);
 }
 
 void IMG_pit_init()
 {
-    pit_ms_init(IMG_PIT_CH, 10);
+    pit_ms_init(IMG_PIT_CH, 15);
     interrupt_set_priority(IMG_PIT_PRIORITY, (5<<5)|6);
 }
 
@@ -35,5 +35,6 @@ void ADC_Battery_pit_init()
 void ALL_pit_init()
 {
     Main_pit_init();
-    IMG_pit_init();
+//    IMG_pit_init();
+//    Encoder_pit_init();
 }
