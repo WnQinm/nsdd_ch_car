@@ -18,13 +18,27 @@
 #define MOTOR2_A   D15                      // 定义2电机正反转引脚
 #define MOTOR2_B   TIM4_PWM_MAP1_CH3_D14         // 定义2电机PWM引脚
 
+/*pid*/
+typedef struct
+{
+    float target_val;     //目标值
+    float actual_val;     //实际值
+    float err;            //定义当前偏差值
+    float err_next;       //定义下一个偏差值
+    float err_last;       //定义最后一个偏差值
+    float Kp, Ki, Kd;     //定义比例、积分、微分系数
+}_pid;
+
 void motor_init(void);
 void motor_control(int32 duty_1, int32 duty_2);
-void motor_pid(int16 encoder, int16 expect_speed);
+void getPulseCount();
 
-extern float v1, v2;
-extern float pulseCount_1, pulseCount_2;
-void getVelocity(float interval);
-int16 MotorPI (int16 Encoder,int16 Target);
+extern int16 pulseCount_1, pulseCount_2;
+extern int32 motorPWML, motorPWMR;
+void PID_param_init();
+void set_pid_target(float temp_val);
+float get_pid_target(void);
+void set_p_i_d(float p, float i, float d);
+float PID_realize(float temp_val);
 
 #endif /* MOTOR_H_ */

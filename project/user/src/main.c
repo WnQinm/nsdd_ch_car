@@ -7,8 +7,11 @@
 #include "Read_ADC.h"
 #include "judgement.h"
 #include "pit.h"
+#include "zf_device_virtual_oscilloscope.h"
 
 void img_handler();
+
+float target_pulse[3] = {25, 45, 65};
 
 int main (void)
 {
@@ -18,10 +21,6 @@ int main (void)
     servo_init();
     motor_init();
     mt9v03x_init();
-//    quinit();
-//    laiinit();
-//    tofinit();
-//    hallinit();
     ips200_init(IPS200_TYPE_PARALLEL8);
     ADC_init();
 
@@ -32,18 +31,44 @@ int main (void)
 
     ImagePerspective_Init();
 
+    // 电机pid调试用
+    uart_init(UART_3, 115200, UART3_MAP0_TX_B10, UART3_MAP0_RX_B11);
+
+    PID_param_init();
+    // 1m/s 10.87pulses;
+    set_pid_target(25);
+
+    key_init(5);
 
     ALL_pit_init();
 
-//    motor_control(800,800);
 
+    uint8 targetcnt = 0;
     while(1)
     {
         // 此处编写需要循环执行的代码
-//        if(!out_flag)
-//            motor_control(600, 600);
-//        else
-//            motor_control(0, 0);
+        key_scanner();
+        switch(key_get_state(KEY_1))
+        {
+            case KEY_SHORT_PRESS:
+            case KEY_LONG_PRESS:
+                set_pid_target(target_pulse[0]);
+                break;
+        }
+        switch(key_get_state(KEY_2))
+        {
+            case KEY_SHORT_PRESS:
+            case KEY_LONG_PRESS:
+                set_pid_target(target_pulse[1]);
+                break;
+        }
+        switch(key_get_state(KEY_3))
+        {
+            case KEY_SHORT_PRESS:
+            case KEY_LONG_PRESS:
+                set_pid_target(target_pulse[2]);
+                break;
+        }
 
         if(mt9v03x_finish_flag)
         {
@@ -62,13 +87,18 @@ void ips200_show()
 //    bluetooth_ch9141_send_image((const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
     Draw_Side();
 
-    ips200_draw_line(0, aimLine, RESULT_COL-1, aimLine, RGB565_GREEN);
-    ips200_show_int(0, 80, road_width[aimLine], 5);
-    ips200_show_int(0, 100, leftline[aimLine], 5);
-    ips200_show_int(50, 100, rightline[aimLine], 5);
+    // motor pid
+    ips200_show_string(0, 80, "pulse count:");
+    ips200_show_int(100, 80, pulseCount_1, 5);
+    ips200_show_int(150, 80, pulseCount_2, 5);
+    ips200_show_string(0, 100, "motor:");
+    ips200_show_int(70, 100, motorPWML, 5);
+    ips200_show_int(120, 100, motorPWMR, 5);
+    ips200_show_string(0, 120, "target pulse:");
+    ips200_show_int(100, 120, get_pid_target(), 3);
 
-    ips200_show_string(0, 130, "Angle:");
-    ips200_show_float(50, 130, Angle, 5, 2);
+    ips200_show_string(110, 0, "Angle:");
+    ips200_show_float(110, 20, Angle, 5, 2);
 
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
@@ -76,20 +106,17 @@ void ips200_show()
     ips200_show_int(80, 170, adc_R, 5);
     ips200_show_int(120, 170, adc_RR, 5);
 
-    // motor pid
-//    ips200_show_float(0, 190, v1, 5, 5);
-//    ips200_show_float(100, 190, v2, 5, 5);
-//    ips200_show_int(0, 210, pulseCount_1, 5);
-//    ips200_show_int(100, 210, pulseCount_2, 5);
-//    ips200_show_int(0, 230, MotorPI(pulseCount_1, -55), 5);
-//    ips200_show_int(100, 230, MotorPI(pulseCount_2, -55), 5);
-
     // camera data
     ips200_show_string(0, 190, "corner point:");
     ips200_show_int(0, 210, LeftBreakpoint.end_y, 4);
     ips200_show_int(40, 210, RightBreakpoint.end_y, 4);
     ips200_show_int(0, 230, LeftBreakpoint.start_y, 4);
     ips200_show_int(40, 230, RightBreakpoint.start_y, 4);
+
+//    ips200_draw_line(0, aimLine, RESULT_COL-1, aimLine, RGB565_GREEN);
+//    ips200_show_int(0, 80, road_width[aimLine], 5);
+//    ips200_show_int(0, 100, leftline[aimLine], 5);
+//    ips200_show_int(50, 100, rightline[aimLine], 5);
 
     ips200_show_string(0, 250, "Status");
     ips200_show_int(100, 250, circle_status, 5);
@@ -102,7 +129,29 @@ void ips200_show()
 
 void elec_handler()
 {
+    // adc+encoder+scope...<200us
+
     Read_ADC();
+
+    static uint8 pulsecnt = 0;
+    if(++pulsecnt>=10)
+    {
+        getPulseCount();
+        virtual_oscilloscope_data_conversion(pulseCount_1,pulseCount_2,0,0);
+        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
+        pulsecnt = 0;
+
+        motorPWML += PID_realize(pulseCount_1);
+        motorPWMR += PID_realize(pulseCount_2);
+
+        if(motorPWML>2000)
+            motorPWML = 2000;
+        if(motorPWMR>2000)
+            motorPWMR=2000;
+
+        motor_control(motorPWML, motorPWMR);
+    }
+
 
     if(!left_circle_flag && !right_circle_flag)
     {
@@ -242,7 +291,6 @@ void img_handler()
     timer_start(TIM_5);
 
     ImageProcess();
-
     // 结束计时
     timer_stop(TIM_5);
     ips200_show_string(0, 290, "imgproc time:");

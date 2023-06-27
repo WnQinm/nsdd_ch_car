@@ -6,9 +6,8 @@
  */
 #include "motor.h"
 
-float v1=0; //左轮速度
-float v2=0; //右轮速度
-float pulseCount_1, pulseCount_2;
+int16 pulseCount_1, pulseCount_2;
+int32 motorPWML=800, motorPWMR=800;
 
 void motor_init(void)
 {
@@ -21,15 +20,30 @@ void motor_init(void)
     pwm_init(MOTOR2_B, 17000, 0);
 }
 
-void getVelocity(float interval){
-    pulseCount_1 = encoder_get_count(ENCODER_1)/5;//(float)abs();// 获取编码器计数
-    pulseCount_2 = -encoder_get_count(ENCODER_2)/5;//(float)abs();// 获取编码器计数
+#define SPEED_RECORD_NUM 50
+float speed_Record1[SPEED_RECORD_NUM]={0};
+float speed_Record2[SPEED_RECORD_NUM]={0};
+int16 Speed_Low_Filter(float new_Spe,float *speed_Record)
+{
+    float sum = 0.0f;
+    for(uint8_t i=SPEED_RECORD_NUM-1;i>0;i--)//将现有数据后移一位
+    {
+        speed_Record[i] = speed_Record[i-1];
+        sum += speed_Record[i-1];
+    }
+    speed_Record[0] = new_Spe;//第一位是新的数据
+    sum += new_Spe;
+    return (int16)sum/SPEED_RECORD_NUM;//返回均值
+}
 
+void getPulseCount(){
+    pulseCount_1 = abs(encoder_get_count(ENCODER_1)/5);// 获取编码器计数
+    pulseCount_2 = abs(encoder_get_count(ENCODER_2)/5);// 获取编码器计数
     encoder_clear_count(ENCODER_1);// 清空编码器计数
     encoder_clear_count(ENCODER_2);// 清空编码器计数
 
-    v1=(pulseCount_1*1.0f/1024 * 9.42)/interval *10;
-    v2=(pulseCount_2*1.0f/1024 * 9.42)/interval *10;
+    pulseCount_1 = Speed_Low_Filter(pulseCount_1, speed_Record1);
+    pulseCount_2 = Speed_Low_Filter(pulseCount_2, speed_Record2);
 }
 
 void motor_control(int32 duty_1, int32 duty_2)
@@ -65,28 +79,85 @@ void motor_control(int32 duty_1, int32 duty_2)
     }
 }
 
-int16 Motor_Bias, Motor_Last_Bias, IntegrationM; // 电机所用参数
-int16 M_P=  -1;//-50
-int16 M_D=0 ;
-int16 M_I= 0;//-6 -1
-int16 velocity= -71;//电机pid参数  -10 - -40
-int16 velocity1= -55;//电机pid参数  -10 - -40
-int16 velocity2= -67;//电机pid参数  -10 - -40
 
-int16 MotorPI (int16 Encoder,int16 Target)
+
+_pid pid;
+
+/**
+  * @brief  PID参数初始化
+    *   @note   无
+  * @retval 无
+  */
+void PID_param_init()
 {
-    static int16 PwmMotor=0;
+  /* 初始化参数 */
+  pid.target_val=25;
+  pid.actual_val=0.0;
+  pid.err = 0.0;
+  pid.err_last = 0.0;
+  pid.err_next = 0.0;
 
-    Motor_Bias = Encoder + Target;                   // 计算偏差
-    IntegrationM+=Motor_Bias;
-    if(IntegrationM<-300)      IntegrationM=-300;   //限幅
-    else if(IntegrationM>300)  IntegrationM= 300;   //限幅
-    PwmMotor = M_D * (Motor_Bias - Motor_Last_Bias) + M_P * Motor_Bias +M_I*IntegrationM; // 增量式PI控制器
+  pid.Kp = 0.045;
+  pid.Ki = 0.00006;
+  pid.Kd = 0.004;
+}
 
-    if(PwmMotor > 2000) PwmMotor = 2000;               // 限幅,等待更细的调试
-    else if(PwmMotor < -2000)PwmMotor = -2000;         // 限幅
+/**
+  * @brief  设置目标值
+  * @param  val     目标值
+    *   @note   无
+  * @retv0al 无
+  */
+void set_pid_target(float temp_val)
+{
+  pid.target_val = temp_val;    // 设置当前的目标值
+}
 
-    Motor_Last_Bias = Motor_Bias;              // 保存上一次偏差
+/**
+  * @brief  获取目标值
+  * @param  无
+    *   @note   无
+  * @retval 目标值
+  */
+float get_pid_target(void)
+{
+  return pid.target_val;    // 设置当前的目标值
+}
 
-    return PwmMotor; // 增量输出
+/**
+  * @brief  设置比例、积分、微分系数
+  * @param  p：比例系数 P
+  * @param  i：积分系数 i
+  * @param  d：微分系数 d
+    *   @note   无
+  * @retval 无
+  */
+void set_p_i_d(float p, float i, float d)
+{
+  pid.Kp = p;    // 设置比例系数 P
+  pid.Ki = i;    // 设置积分系数 I
+  pid.Kd = d;    // 设置微分系数 D
+}
+
+/**
+  * @brief  PID算法实现
+  * @param  val     目标值
+    *   @note   无
+  * @retval 通过PID计算后的输出
+  */
+float PID_realize(float temp_val)
+{
+    /*计算目标值与实际值的误差*/
+    pid.err = pid.target_val - temp_val;
+
+    /*PID算法实现*/
+    pid.actual_val += pid.Kp * (pid.err - pid.err_next)
+                 +  pid.Ki *  pid.err
+                 +  pid.Kd * (pid.err - 2 * pid.err_next + pid.err_last);
+    /*传递误差*/
+    pid.err_last = pid.err_next;
+    pid.err_next = pid.err;
+
+    /*返回当前实际值*/
+    return pid.actual_val;
 }
