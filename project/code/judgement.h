@@ -8,13 +8,17 @@
 #ifndef JUDGEMENT_H_
 #define JUDGEMENT_H_
 
+#define CROSS_DELAY_TIME 3000
+
 // 道路状态枚举
+// 或许可以吧循右线放这里
 typedef enum
 {
     Status_Stop   = 0,
     Status_Common = 1,
     Status_Circle = 2,
-    Status_Camera = 3
+    Status_LCamera = 3,
+    Status_RCamera = 4
 }RaceStatus;
 
 #include "zf_common_headfile.h"

@@ -21,7 +21,7 @@ float last_err_elec=0;
 int midline_f, midline_ff, midline_fff;
 //通过aimline及其下面3行计算偏差
 uint8 aimLine=default_aimline;
-float current_err_camera, last_err_camera;
+float current_err_Lcamera, current_err_Rcamera, last_err_camera;
 
 void servo_init()
 {
@@ -30,21 +30,27 @@ void servo_init()
 
 void servo_control(RaceStatus status)
 {
-    // todo 引入边界保护后可以去除分母的1
+
     current_err_common = ((int16)(adc_L-adc_R)<<7)/(adc_L+adc_R+1);
     current_err_circle = ((int16)(adc_LL-adc_RR)<<7)/(adc_LL+adc_RR+1);
 
-    current_err_camera = ((  5 * centerline[aimLine] +
-                             3 * centerline[aimLine + 1] +
-                             2 * centerline[aimLine + 2]) / (10.000f)) - COL/2;
-    current_err_camera = current_err_camera * 0.80f - regression(aimLine, aimLine+5) * 0.20f;
+    current_err_Lcamera = ((  5 * (leftline[aimLine]-Road_Width_Min/2) +
+                             3 * (leftline[aimLine+1]-Road_Width_Min/2) +
+                             2 * (leftline[aimLine+2]-Road_Width_Min/2)) / (10.000f)) - COL/2;
+    current_err_Lcamera = current_err_Lcamera * 0.80f - regression(aimLine, aimLine+5) * 0.20f;
+
+    current_err_Rcamera = ((  5 * (rightline[aimLine]-Road_Width_Min/2) +
+                             3 * (rightline[aimLine+1]-Road_Width_Min/2) +
+                             2 * (rightline[aimLine+2]-Road_Width_Min/2)) / (10.000f)) - COL/2;
+    current_err_Rcamera = current_err_Rcamera * 0.80f - regression(aimLine, aimLine+5) * 0.20f;
 
     switch (status)
     {
         case Status_Stop:return;
         case Status_Common:elec_pid(current_err_common);break;
         case Status_Circle:elec_pid(current_err_circle);break;
-        case Status_Camera:camera_pid(current_err_camera);break;
+        case Status_LCamera:camera_pid(current_err_Lcamera);break;
+        case Status_RCamera:camera_pid(current_err_Rcamera);break;
     }
 
     // 角度限幅

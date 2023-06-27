@@ -40,7 +40,7 @@ typedef struct
 
 extern uint8 bin_image[MT9V03X_H][MT9V03X_W];//Í¼ÏñÊý×é
 
-extern uint8 centerline[ROW+2];
+extern uint8 road_width[ROW+2], centerline[ROW+2];
 extern uint8 leftline[ROW+2],rightline[ROW+2],centerline[ROW+2];
 extern breakpoint LeftBreakpoint, RightBreakpoint;
 extern uint8 lostline_cnt;

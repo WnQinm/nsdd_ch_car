@@ -331,6 +331,14 @@ void TIM6_IRQHandler(void)
 
        elec_handler();
 
+       if(out_flag)
+       {
+           CURRENT_STATUS = Status_Stop;
+           motor_control(0, 0);
+       }
+       else
+           motor_control(800, 800);
+
        servo_control(CURRENT_STATUS);
 
     }

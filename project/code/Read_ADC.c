@@ -86,7 +86,7 @@ void Read_ADC()
     adc_R = Normal(adc_R);
     adc_RR = Normal(adc_RR);
 
-    if ((adc_LL + adc_RR + adc_L + adc_R)<100)
+    if (adc_LL + adc_RR + adc_L + adc_R<100)
         out_flag = true;
     else
         out_flag = false;

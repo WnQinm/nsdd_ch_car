@@ -24,7 +24,7 @@
 #define SERVO_CENTER        90
 
 
-#define default_aimline ROW-1-30//默认控制行
+#define default_aimline ROW-1-10//默认控制行
 
 
 void servo_init();
@@ -34,5 +34,5 @@ void camera_pid(float current_err);
 
 extern float Angle;
 extern float current_err_common, current_err_circle;
-
+extern uint8 aimLine;
 #endif /* SERVO_H_ */
