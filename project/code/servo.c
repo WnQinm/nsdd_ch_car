@@ -10,8 +10,8 @@
 float Angle=90;
 
 // 电磁参数
-#define elec_Kp 15
-#define elec_Kd 0.9
+float elec_Kp = 15;
+float elec_Kd = 0.9;
 float current_err_common, current_err_circle;
 float last_err_elec=0;
 
@@ -30,20 +30,29 @@ void servo_init()
 
 void servo_control(RaceStatus status)
 {
-
+    // 普通电磁巡线
     current_err_common = ((int16)(adc_L-adc_R)<<7)/(adc_L+adc_R+1);
+    // 垂直电感电磁巡线
     current_err_circle = ((int16)(adc_LL-adc_RR)<<7)/(adc_LL+adc_RR+1);
-
+    // 摄像头循左边线
     current_err_Lcamera = ((  5 * (leftline[aimLine]-Road_Width_Min/2) +
                              3 * (leftline[aimLine+1]-Road_Width_Min/2) +
                              2 * (leftline[aimLine+2]-Road_Width_Min/2)) / (10.000f)) - COL/2;
     current_err_Lcamera = current_err_Lcamera * 0.80f - regression(aimLine, aimLine+5) * 0.20f;
-
+    // 摄像头循右边线
     current_err_Rcamera = ((  5 * (rightline[aimLine]-Road_Width_Min/2) +
                              3 * (rightline[aimLine+1]-Road_Width_Min/2) +
                              2 * (rightline[aimLine+2]-Road_Width_Min/2)) / (10.000f)) - COL/2;
     current_err_Rcamera = current_err_Rcamera * 0.80f - regression(aimLine, aimLine+5) * 0.20f;
-
+#if SERVO_DEBUG_STATUS
+#define ENLARGE_TIME 1      // 放大倍数，由于串口传输数据只能传输整数，所以可能需要放大误差
+    virtual_oscilloscope_data_conversion((int16)(current_err_common*ENLARGE_TIME),
+                                         (int16)(current_err_circle*ENLARGE_TIME),
+                                         (int16)(current_err_Lcamera*ENLARGE_TIME),
+                                         (int16)(current_err_Rcamera*ENLARGE_TIME));
+//        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
+    bluetooth_ch9141_send_buff(virtual_oscilloscope_data, 10);
+#endif
     switch (status)
     {
         case Status_Stop:return;

@@ -41,4 +41,9 @@ void camera_pid(float current_err);
 extern float Angle;
 extern float current_err_common, current_err_circle;
 extern uint8 aimLine;
+
+#if SERVO_DEBUG_STATUS
+extern float elec_Kp, elec_Kd;
+#endif
+
 #endif /* SERVO_H_ */

@@ -36,17 +36,24 @@ int main (void)
 
     ImagePerspective_Init();
 
-#if MOTOR_DEBUG_STATUS
+#if MOTOR_DEBUG_STATUS || SERVO_DEBUG_STATUS
 //    uart_init(UART_3, 115200, UART3_MAP0_TX_B10, UART3_MAP0_RX_B11);
     bluetooth_ch9141_init();
     key_init(5);
+#endif
+
+#if SERVO_DEBUG_STATUS
+    uint8 key_status = 0;               // 0调整p，1调整d
+#endif
+
+#if MOTOR_DEBUG_STATUS
+    uint8 key_status = 0;               // 0电机目标速度调整，1pid参数调整
+    uint8 key_ChangeWhichOf_pid = 0;    // 0调整p，1调整i,2调整d
 #if CAR_TYPE
     float target_pulse[3] = {25, 45, 65};
 #else
     float target_pulse[3] = {10, 30, 50};
 #endif
-    uint8 key_status = 0;               // 0电机目标速度调整，1pid参数调整
-    uint8 key_ChangeWhichOf_pid = 0;    // 0调整p，1调整i,2调整d
 #endif
 
     PID_param_init();
@@ -92,11 +99,11 @@ int main (void)
                 case KEY_SHORT_PRESS:
                 case KEY_LONG_PRESS:
                     if(key_ChangeWhichOf_pid==0)
-                        pid.Kp+=0.001;
+                        motor_pid.Kp+=0.001;
                     else if(key_ChangeWhichOf_pid==1)
-                        pid.Ki+=0.000001;
+                        motor_pid.Ki+=0.000001;
                     else if(key_ChangeWhichOf_pid==2)
-                        pid.Kd+=0.01;
+                        motor_pid.Kd+=0.01;
                     break;
             }
             switch(key_get_state(KEY_2))
@@ -104,11 +111,11 @@ int main (void)
                 case KEY_SHORT_PRESS:
                 case KEY_LONG_PRESS:
                     if(key_ChangeWhichOf_pid==0)
-                        pid.Kp-=0.001;
+                        motor_pid.Kp-=0.001;
                     else if(key_ChangeWhichOf_pid==1)
-                        pid.Ki-=0.000001;
+                        motor_pid.Ki-=0.000001;
                     else if(key_ChangeWhichOf_pid==2)
-                        pid.Kd-=0.01;
+                        motor_pid.Kd-=0.01;
                     break;
             }
             switch(key_get_state(KEY_3))
@@ -130,6 +137,39 @@ int main (void)
                 break;
         }
 #endif
+
+#if SERVO_DEBUG_STATUS
+        key_scanner();
+        switch(key_get_state(KEY_1))
+        {
+            case KEY_SHORT_PRESS:
+            case KEY_LONG_PRESS:
+                if(key_status==0)
+                    elec_Kp+=0.1;
+                else if(key_status==1)
+                    elec_Kd+=0.01;
+                break;
+        }
+        switch(key_get_state(KEY_2))
+        {
+            case KEY_SHORT_PRESS:
+            case KEY_LONG_PRESS:
+                if(key_status==0)
+                    elec_Kp-=0.1;
+                else if(key_status==1)
+                    elec_Kd-=0.01;
+                break;
+        }
+        switch(key_get_state(KEY_3))
+        {
+            case KEY_SHORT_PRESS:
+            case KEY_LONG_PRESS:
+                key_status++;
+                key_status%=2;
+                break;
+        }
+#endif
+
         if(mt9v03x_finish_flag)
         {
             img_handler();
@@ -167,12 +207,18 @@ void ips200_show()
     ips200_show_int(100, 120, get_pid_target(), 3);
 
     ips200_show_string(0, 140, "Kp");
-    ips200_show_float(40, 140, pid.Kp, 2, 8);
+    ips200_show_float(40, 140, motor_pid.Kp, 2, 8);
     ips200_show_string(0, 140, "Ki");
-    ips200_show_float(40, 140, pid.Ki, 2, 8);
+    ips200_show_float(40, 140, motor_pid.Ki, 2, 8);
     ips200_show_string(0, 140, "Kd");
-    ips200_show_float(40, 140, pid.Kd, 2, 8);
+    ips200_show_float(40, 140, motor_pid.Kd, 2, 8);
 
+#elif SERVO_DEBUG_STATUS
+    ips200_show_string(0, 80, "servo pid:");
+    ips200_show_string(0, 100, "Kp:");
+    ips200_show_float(40, 100, elec_Kp, 5, 5);
+    ips200_show_string(0, 120, "Kd:");
+    ips200_show_float(40, 120, elec_Kd, 5, 5);
 #else
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
