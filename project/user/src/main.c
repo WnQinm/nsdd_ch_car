@@ -8,10 +8,13 @@
 #include "judgement.h"
 #include "pit.h"
 #include "zf_device_virtual_oscilloscope.h"
+#include "config.h"
 
 void img_handler();
 
+#if MOTOR_DEBUG_STATUS
 float target_pulse[3] = {25, 45, 65};
+#endif
 
 int main (void)
 {
@@ -32,21 +35,23 @@ int main (void)
     ImagePerspective_Init();
 
     // 电机pid调试用
-    uart_init(UART_3, 115200, UART3_MAP0_TX_B10, UART3_MAP0_RX_B11);
+#if MOTOR_DEBUG_STATUS
+//    uart_init(UART_3, 115200, UART3_MAP0_TX_B10, UART3_MAP0_RX_B11);
+    bluetooth_ch9141_init();
+    key_init(5);
+#endif
 
     PID_param_init();
-    // 1m/s 10.87pulses;
+    // 1m/s 54pulse/5ms
     set_pid_target(25);
-
-    key_init(5);
 
     ALL_pit_init();
 
 
-    uint8 targetcnt = 0;
     while(1)
     {
         // 此处编写需要循环执行的代码
+#if MOTOR_DEBUG_STATUS
         key_scanner();
         switch(key_get_state(KEY_1))
         {
@@ -69,7 +74,7 @@ int main (void)
                 set_pid_target(target_pulse[2]);
                 break;
         }
-
+#endif
         if(mt9v03x_finish_flag)
         {
             img_handler();
@@ -88,6 +93,7 @@ void ips200_show()
     Draw_Side();
 
     // motor pid
+#if MOTOR_DEBUG_STATUS
     ips200_show_string(0, 80, "pulse count:");
     ips200_show_int(100, 80, pulseCount_1, 5);
     ips200_show_int(150, 80, pulseCount_2, 5);
@@ -96,6 +102,7 @@ void ips200_show()
     ips200_show_int(120, 100, motorPWMR, 5);
     ips200_show_string(0, 120, "target pulse:");
     ips200_show_int(100, 120, get_pid_target(), 3);
+#endif
 
     ips200_show_string(110, 0, "Angle:");
     ips200_show_float(110, 20, Angle, 5, 2);
@@ -137,9 +144,13 @@ void elec_handler()
     if(++pulsecnt>=10)
     {
         getPulseCount();
-        virtual_oscilloscope_data_conversion(pulseCount_1,pulseCount_2,0,0);
-        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
         pulsecnt = 0;
+
+#if MOTOR_DEBUG_STATUS
+        virtual_oscilloscope_data_conversion(pulseCount_1,pulseCount_2,0,0);
+//        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
+        bluetooth_ch9141_send_buff(virtual_oscilloscope_data, 10);
+#endif
 
         motorPWML += PID_realize(pulseCount_1);
         motorPWMR += PID_realize(pulseCount_2);
@@ -211,7 +222,7 @@ void elec_handler()
                     }
                     break;
                 case 5:// step5 出环后
-                    CURRENT_STATUS = Status_RCamera;
+                    CURRENT_STATUS = Status_Common;
                     if(++cnt>1000)
                     {
                         cnt = 0;

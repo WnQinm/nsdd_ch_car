@@ -10,6 +10,7 @@
 
 #include "zf_common_headfile.h"
 #include "pit.h"
+#include "config.h"
 
 //初始化电机PWM引脚和方向引脚
 #define MOTOR1_A   D12                      // 定义1电机正反转引脚

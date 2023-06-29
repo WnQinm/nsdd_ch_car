@@ -97,9 +97,9 @@ void PID_param_init()
   pid.err_last = 0.0;
   pid.err_next = 0.0;
 
-  pid.Kp = 0.045;
-  pid.Ki = 0.00006;
-  pid.Kd = 0.004;
+  pid.Kp = 0.06;
+  pid.Ki = 0.000038;
+  pid.Kd = 0;//.05;
 }
 
 /**
