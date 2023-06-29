@@ -13,6 +13,7 @@
 #include "motor.h"
 #include "mathh.h"
 #include "judgement.h"
+#include "config.h"
 
 #define white 255
 #define black 0

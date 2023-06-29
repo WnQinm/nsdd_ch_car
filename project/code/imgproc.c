@@ -114,7 +114,13 @@ void turn_to_bin(uint8 image_w, uint8 image_h, uint8 thereshold)
 void ImagePerspective_Init(void)
 {
     static uint8 BlackColor = 0;
+
+#if CAR_TYPE
     double change_un_Mat[3][3] ={{-1.249200,1.007972,-26.999219},{-0.098009,0.294157,-41.195868},{-0.001661,0.011368,-0.857782}};
+#else
+    double change_un_Mat[3][3] ={{-1.249200,1.007972,-26.999219},{-0.098009,0.294157,-41.195868},{-0.001661,0.011368,-0.857782}};
+#endif
+
     for (int i = 0; i < RESULT_COL ;i++)
     {
         for (int j = 0; j < RESULT_ROW ;j++)
@@ -308,6 +314,7 @@ void ImageProcess()
     // 4-5ms
     turn_to_bin(RESULT_COL, RESULT_ROW, otsu_thereshold);
 
+    // 不知道为什么通过通过现在逆透视那里的宏调用方法无法正常在屏幕显示图像，需要再复制到新数组中才可以
     for(uint8 num=0;num<RESULT_ROW;num++)
        memcpy(_img[num],bin_image[num],RESULT_COL);
 
