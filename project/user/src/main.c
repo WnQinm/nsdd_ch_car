@@ -12,10 +12,6 @@
 
 void img_handler();
 
-#if MOTOR_DEBUG_STATUS
-float target_pulse[3] = {25, 45, 65};
-#endif
-
 // 避障相关
 uint16 distance=0;
 uint16 obstacle_cnt=0;
@@ -44,6 +40,13 @@ int main (void)
 //    uart_init(UART_3, 115200, UART3_MAP0_TX_B10, UART3_MAP0_RX_B11);
     bluetooth_ch9141_init();
     key_init(5);
+#if CAR_TYPE
+    float target_pulse[3] = {25, 45, 65};
+#else
+    float target_pulse[3] = {10, 30, 50};
+#endif
+    uint8 key_status = 0;               // 0电机目标速度调整，1pid参数调整
+    uint8 key_ChangeWhichOf_pid = 0;    // 0调整p，1调整i,2调整d
 #endif
 
     PID_param_init();
@@ -58,25 +61,72 @@ int main (void)
         // 此处编写需要循环执行的代码
 #if MOTOR_DEBUG_STATUS
         key_scanner();
-        switch(key_get_state(KEY_1))
-        {
-            case KEY_SHORT_PRESS:
-            case KEY_LONG_PRESS:
-                set_pid_target(target_pulse[0]);
-                break;
+        if(key_status)
+        {// change motor target pulse
+            switch(key_get_state(KEY_1))
+            {
+                case KEY_SHORT_PRESS:
+                case KEY_LONG_PRESS:
+                    set_pid_target(target_pulse[0]);
+                    break;
+            }
+            switch(key_get_state(KEY_2))
+            {
+                case KEY_SHORT_PRESS:
+                case KEY_LONG_PRESS:
+                    set_pid_target(target_pulse[1]);
+                    break;
+            }
+            switch(key_get_state(KEY_3))
+            {
+                case KEY_SHORT_PRESS:
+                case KEY_LONG_PRESS:
+                    set_pid_target(target_pulse[2]);
+                    break;
+            }
         }
-        switch(key_get_state(KEY_2))
-        {
-            case KEY_SHORT_PRESS:
-            case KEY_LONG_PRESS:
-                set_pid_target(target_pulse[1]);
-                break;
+        else
+        {// change motor pid
+            switch(key_get_state(KEY_1))
+            {
+                case KEY_SHORT_PRESS:
+                case KEY_LONG_PRESS:
+                    if(key_ChangeWhichOf_pid==0)
+                        pid.Kp+=0.001;
+                    else if(key_ChangeWhichOf_pid==1)
+                        pid.Ki+=0.000001;
+                    else if(key_ChangeWhichOf_pid==2)
+                        pid.Kd+=0.01;
+                    break;
+            }
+            switch(key_get_state(KEY_2))
+            {
+                case KEY_SHORT_PRESS:
+                case KEY_LONG_PRESS:
+                    if(key_ChangeWhichOf_pid==0)
+                        pid.Kp-=0.001;
+                    else if(key_ChangeWhichOf_pid==1)
+                        pid.Ki-=0.000001;
+                    else if(key_ChangeWhichOf_pid==2)
+                        pid.Kd-=0.01;
+                    break;
+            }
+            switch(key_get_state(KEY_3))
+            {
+                case KEY_SHORT_PRESS:
+                case KEY_LONG_PRESS:
+                    key_ChangeWhichOf_pid++;
+                    key_ChangeWhichOf_pid%=3;
+                    break;
+            }
         }
-        switch(key_get_state(KEY_3))
+
+        switch(key_get_state(KEY_4))
         {
             case KEY_SHORT_PRESS:
             case KEY_LONG_PRESS:
-                set_pid_target(target_pulse[2]);
+                key_status++;
+                key_status%=2;
                 break;
         }
 #endif
@@ -97,6 +147,14 @@ void ips200_show()
 //    bluetooth_ch9141_send_image((const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
     Draw_Side();
 
+    ips200_show_string(110, 0, "Angle:");
+    ips200_show_float(110, 20, Angle, 5, 2);
+
+    ips200_show_string(110,40,"Distance: ");
+    ips200_show_int(150,40,distance,5);
+    ips200_show_string(110,60,"Voltage: ");
+    ips200_show_float(150,60,voltage_now,2,3);
+
     // motor pid
 #if MOTOR_DEBUG_STATUS
     ips200_show_string(0, 80, "pulse count:");
@@ -107,16 +165,15 @@ void ips200_show()
     ips200_show_int(120, 100, motorPWMR, 5);
     ips200_show_string(0, 120, "target pulse:");
     ips200_show_int(100, 120, get_pid_target(), 3);
-#endif
 
-    ips200_show_string(110, 0, "Angle:");
-    ips200_show_float(110, 20, Angle, 5, 2);
+    ips200_show_string(0, 140, "Kp");
+    ips200_show_float(40, 140, pid.Kp, 2, 8);
+    ips200_show_string(0, 140, "Ki");
+    ips200_show_float(40, 140, pid.Ki, 2, 8);
+    ips200_show_string(0, 140, "Kd");
+    ips200_show_float(40, 140, pid.Kd, 2, 8);
 
-    ips200_show_string(110,40,"Distance: ");
-    ips200_show_int(150,40,distance,5);
-    ips200_show_string(110,60,"Voltage: ");
-    ips200_show_float(150,60,voltage_now,2,3);
-
+#else
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
@@ -142,6 +199,8 @@ void ips200_show()
     else if(!cross_flag)
         ips200_show_string(0, 270, "     ");
     ips200_show_int(100, 270, cross_cnt, 6);
+
+#endif
 }
 
 void elec_handler()

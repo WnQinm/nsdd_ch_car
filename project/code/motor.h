@@ -36,6 +36,10 @@ void motor_init(void);
 void motor_control(int32 duty_1, int32 duty_2);
 void getPulseCount();
 
+#if MOTOR_DEBUG_STATUS
+extern _pid pid;
+#endif
+
 extern int16 pulseCount_1, pulseCount_2;
 extern int32 motorPWML, motorPWMR;
 void PID_param_init();
