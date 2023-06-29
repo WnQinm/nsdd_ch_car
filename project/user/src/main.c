@@ -16,6 +16,11 @@ void img_handler();
 float target_pulse[3] = {25, 45, 65};
 #endif
 
+// 避障相关
+uint16 distance=0;
+uint16 obstacle_cnt=0;
+uint8 obstacle_phase=0;
+
 int main (void)
 {
 
@@ -26,6 +31,7 @@ int main (void)
     mt9v03x_init();
     ips200_init(IPS200_TYPE_PARALLEL8);
     ADC_init();
+    tofInit();
 
     timer_init(TIM_5, TIMER_MS);//计时器，查看程序运行时间
 
@@ -34,7 +40,6 @@ int main (void)
 
     ImagePerspective_Init();
 
-    // 电机pid调试用
 #if MOTOR_DEBUG_STATUS
 //    uart_init(UART_3, 115200, UART3_MAP0_TX_B10, UART3_MAP0_RX_B11);
     bluetooth_ch9141_init();
@@ -45,7 +50,7 @@ int main (void)
     // 1m/s 54pulse/5ms
     set_pid_target(25);
 
-    ALL_pit_init();
+    Main_pit_init();
 
 
     while(1)
@@ -107,6 +112,11 @@ void ips200_show()
     ips200_show_string(110, 0, "Angle:");
     ips200_show_float(110, 20, Angle, 5, 2);
 
+    ips200_show_string(110,40,"Distance: ");
+    ips200_show_int(150,40,distance,5);
+    ips200_show_string(110,60,"Voltage: ");
+    ips200_show_float(150,60,voltage_now,2,3);
+
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
@@ -140,11 +150,10 @@ void elec_handler()
 
     Read_ADC();
 
-    static uint8 pulsecnt = 0;
-    if(++pulsecnt>=10)
+    static uint8 elec_handler_cnt = 0;// 通过count计数实现delay效果
+    if(elec_handler_cnt%10==0)
     {
         getPulseCount();
-        pulsecnt = 0;
 
 #if MOTOR_DEBUG_STATUS
         virtual_oscilloscope_data_conversion(pulseCount_1,pulseCount_2,0,0);
@@ -163,13 +172,26 @@ void elec_handler()
         motor_control(motorPWML, motorPWMR);
     }
 
+    // 红外避障
+    if (!obstacle_flag && elec_handler_cnt % 200 == 0)
+    {
+        // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
+        distance = Get_Distance();
+//        printf("Dis: %d",distance);
+        if (distance <= 600)
+        {
+//            printf("Obstacle!");
+            obstacle_flag=true;
+            obstacle_cnt=0;
+        }
+    }
 
-    if(!left_circle_flag && !right_circle_flag)
+    if(!left_circle_flag && !right_circle_flag && !obstacle_flag)
     {
         judgement();
         CURRENT_STATUS = Status_Common;
     }
-    else
+    else if(left_circle_flag || right_circle_flag)
     {
         static uint16 cnt=0;
         if(left_circle_flag)
@@ -292,6 +314,89 @@ void elec_handler()
                     break;
             }
         }
+    }
+    else if(obstacle_flag)
+    {
+        set_pid_target(15);
+        CURRENT_STATUS = Status_Stop;
+        switch (obstacle_phase)
+        {
+            case 0:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+                if(obstacle_cnt>=Delay_cnt_calc(180)){
+                    obstacle_cnt=0;
+                    obstacle_phase=1;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 1:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_cnt>=Delay_cnt_calc(600)){
+                    obstacle_cnt=0;
+                    obstacle_phase=2;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 2:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                if(obstacle_cnt>=Delay_cnt_calc(200)){
+                    obstacle_cnt=0;
+                    obstacle_phase=3;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 3:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_cnt>=Delay_cnt_calc(300)){
+                    obstacle_cnt=0;
+                    obstacle_phase=4;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 4:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                if(obstacle_cnt>=Delay_cnt_calc(200)){
+                    obstacle_cnt=0;
+                    obstacle_phase=5;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 5:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_cnt>=Delay_cnt_calc(600)){
+                    obstacle_cnt=0;
+                    obstacle_phase=6;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 6:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+                if(obstacle_cnt>=Delay_cnt_calc(180)){
+                    obstacle_cnt=0;
+                    obstacle_phase=0;
+                    obstacle_flag=false;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+        }
+    }
+
+    //电池电量检测
+    if(elec_handler_cnt%10000){
+        Get_Battery_Voltage();
+    }
+
+    if (elec_handler_cnt == 10000) {
+        elec_handler_cnt = 0;
+    }else{
+        elec_handler_cnt++;
     }
 
 }

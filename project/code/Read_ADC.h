@@ -16,6 +16,7 @@
 
 void ADC_init();
 void Read_ADC();
+void Get_Battery_Voltage();
 
 typedef struct{
     float LastP;
@@ -26,6 +27,7 @@ typedef struct{
     float R;
 }kalman_param;
 
+extern float voltage_now;//电池电压
 extern float ADC_MAX,ADC_MIN;
 extern uint16 adc_LL,adc_L,adc_R,adc_RR;//电感采集值
 

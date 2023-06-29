@@ -19,6 +19,8 @@
 #define MOTOR2_A   D15                      // 定义2电机正反转引脚
 #define MOTOR2_B   TIM4_PWM_MAP1_CH3_D14         // 定义2电机PWM引脚
 
+#define NORMAL_DUTY 800
+
 /*pid*/
 typedef struct
 {

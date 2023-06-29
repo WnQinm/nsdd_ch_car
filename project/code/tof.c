@@ -18,9 +18,9 @@ void tofInit(){
     }
 }
 
-uint16 getDistance(){
+uint16 Get_Distance(){
     dl1a_get_distance();                                                    // 测距调用频率不应高于 30Hz 周期不应低于 33.33ms
-    uint32 output;
+    uint16 output;
 
 //    printf("\r\nDL1A distance data: %5d", dl1a_distance_mm);
 

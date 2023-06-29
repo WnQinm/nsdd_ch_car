@@ -11,6 +11,6 @@
 #include <zf_common_headfile.h>
 
 void tofInit();
-uint16 getDistance();
+uint16 Get_Distance();
 
 #endif /* TOF_H_ */
