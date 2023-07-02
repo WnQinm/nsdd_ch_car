@@ -6,7 +6,11 @@
  */
 #include "Read_ADC.h"
 
+#if CAR_TYPE
 float ADC_MAX = 235,ADC_MIN = 0;
+#else
+float ADC_MAX = 115,ADC_MIN = 0;
+#endif
 float voltage_now=0;
 uint16 adc_LL,adc_L,adc_R,adc_RR;//µç¸Ð²É¼¯Öµ     | - - |
 kalman_param kfp0, kfp1, kfp2, kfp3;
@@ -33,14 +37,17 @@ void kfp_init(void)
 
 void ADC_init()
 {
-//    adc_init(ADC1_IN12_C2, ADC_8BIT);
-//    adc_init(ADC1_IN13_C3,ADC_8BIT);
-//    adc_init(ADC1_IN14_C4,ADC_8BIT);
-//    adc_init(ADC1_IN15_C5, ADC_8BIT);
+#if CAR_TYPE
     adc_init(ADC1_IN7_A7, ADC_8BIT);
     adc_init(ADC1_IN9_B1,ADC_8BIT);
     adc_init(ADC1_IN10_C0,ADC_8BIT);
     adc_init(ADC1_IN11_C1, ADC_8BIT);
+#else
+    adc_init(ADC1_IN12_C2, ADC_8BIT);
+    adc_init(ADC1_IN13_C3,ADC_8BIT);
+    adc_init(ADC1_IN14_C4,ADC_8BIT);
+    adc_init(ADC1_IN15_C5, ADC_8BIT);
+#endif
     kfp_init();
 
     // ADC get Battery init
@@ -69,21 +76,17 @@ uint16 Normal(uint16 adc_val)
 
 void Read_ADC()
 {
-
-//    adc_LL=adc_mean_filter_convert(ADC1_IN12_C2, 10);//×óÊú
-//    adc_RR=adc_mean_filter_convert(ADC1_IN13_C3, 10);//ÓÒÊú
-//    adc_L=adc_mean_filter_convert(ADC1_IN14_C4, 10);//×óºá
-//    adc_R=adc_mean_filter_convert(ADC1_IN15_C5, 10);//ÓÒºá
-
-//    do
-//    {
+#if CAR_TYPE
     adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN7_A7, 10));//×óÊú
     adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//ÓÒÊú
     adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//×óºá
     adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//ÓÒºá
-//        motor_control(0,0);
-//    }
-//    while(adc_LL+adc_RR+adc_L+adc_R<100);
+#else
+    adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN12_C2, 10));//×óÊú
+    adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN13_C3, 10));//ÓÒÊú
+    adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN14_C4, 10));//×óºá
+    adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN15_C5, 10));//ÓÒºá
+#endif
 
     adc_LL = Normal(adc_LL);
     adc_L = Normal(adc_L);
@@ -94,7 +97,6 @@ void Read_ADC()
         out_flag = true;
     else
         out_flag = false;
-
 }
 
 void Get_Battery_Voltage(){

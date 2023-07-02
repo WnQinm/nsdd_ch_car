@@ -323,19 +323,24 @@ void TIM5_IRQHandler(void)
 #include "servo.h"
 #include "motor.h"
 extern void elec_handler();
+extern bool judgeStopline();
 void TIM6_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET)
     {
        TIM_ClearITPendingBit(TIM6, TIM_IT_Update );
 
-//       if(out_flag)
+       if(out_flag)
+       {
+           Read_ADC();
+           CURRENT_STATUS = Status_Stop;
+           motor_control(0, 0);
+       }
+//       else if(!judgeStopline())
 //       {
-//           CURRENT_STATUS = Status_Stop;
-//           PID_param_init();
-//           motor_control(0, 0);
+//           while(1) motor_control(0, 0);
 //       }
-//       else
+       else
            elec_handler();
 
        servo_control(CURRENT_STATUS);

@@ -7,7 +7,7 @@
 #include "motor.h"
 
 int16 pulseCount_1, pulseCount_2;
-int32 motorPWML=800, motorPWMR=800;
+int16 motorPWML=800, motorPWMR=800;
 
 void motor_init(void)
 {
@@ -81,7 +81,7 @@ void motor_control(int32 duty_1, int32 duty_2)
 
 
 
-_pid motor_pid;
+_pid Lmotor_pid, Rmotor_pid;
 
 /**
   * @brief  PID参数初始化
@@ -91,15 +91,23 @@ _pid motor_pid;
 void PID_param_init()
 {
   /* 初始化参数 */
-  motor_pid.target_val=25;
-  motor_pid.actual_val=0.0;
-  motor_pid.err = 0.0;
-  motor_pid.err_last = 0.0;
-  motor_pid.err_next = 0.0;
+  Lmotor_pid.target_val=0;
+  Lmotor_pid.actual_val=0.0;
+  Lmotor_pid.err = 0.0;
+  Lmotor_pid.err_last = 0.0;
+  Lmotor_pid.err_next = 0.0;
+  Lmotor_pid.Kp = 0.06;
+  Lmotor_pid.Ki = 0.000038;
+  Lmotor_pid.Kd = 0;//.05;
 
-  motor_pid.Kp = 0.06;
-  motor_pid.Ki = 0.000038;
-  motor_pid.Kd = 0;//.05;
+  Rmotor_pid.target_val=0;
+  Rmotor_pid.actual_val=0.0;
+  Rmotor_pid.err = 0.0;
+  Rmotor_pid.err_last = 0.0;
+  Rmotor_pid.err_next = 0.0;
+  Rmotor_pid.Kp = 0.06;
+  Rmotor_pid.Ki = 0.000038;
+  Rmotor_pid.Kd = 0;//.05;
 }
 
 /**
@@ -110,7 +118,8 @@ void PID_param_init()
   */
 void set_pid_target(float temp_val)
 {
-  motor_pid.target_val = temp_val;    // 设置当前的目标值
+    Lmotor_pid.target_val = temp_val;    // 设置当前的目标值
+    Rmotor_pid.target_val = temp_val;
 }
 
 /**
@@ -121,7 +130,7 @@ void set_pid_target(float temp_val)
   */
 float get_pid_target(void)
 {
-  return motor_pid.target_val;    // 设置当前的目标值
+  return Lmotor_pid.target_val;    // 设置当前的目标值
 }
 
 /**
@@ -134,9 +143,13 @@ float get_pid_target(void)
   */
 void set_p_i_d(float p, float i, float d)
 {
-  motor_pid.Kp = p;    // 设置比例系数 P
-  motor_pid.Ki = i;    // 设置积分系数 I
-  motor_pid.Kd = d;    // 设置微分系数 D
+  Lmotor_pid.Kp = p;    // 设置比例系数 P
+  Lmotor_pid.Ki = i;    // 设置积分系数 I
+  Lmotor_pid.Kd = d;    // 设置微分系数 D
+
+  Rmotor_pid.Kp = p;    // 设置比例系数 P
+  Rmotor_pid.Ki = i;    // 设置积分系数 I
+  Rmotor_pid.Kd = d;    // 设置微分系数 D
 }
 
 /**
@@ -145,19 +158,38 @@ void set_p_i_d(float p, float i, float d)
     *   @note   无
   * @retval 通过PID计算后的输出
   */
-float PID_realize(float temp_val)
+float PID_realize(uint8 LR, float temp_val)
 {
-    /*计算目标值与实际值的误差*/
-    motor_pid.err = motor_pid.target_val - temp_val;
+    if(LR==0)
+    {
+        /*计算目标值与实际值的误差*/
+        Lmotor_pid.err = Lmotor_pid.target_val - temp_val;
 
-    /*PID算法实现*/
-    motor_pid.actual_val += motor_pid.Kp * (motor_pid.err - motor_pid.err_next)
-                 +  motor_pid.Ki *  motor_pid.err
-                 +  motor_pid.Kd * (motor_pid.err - 2 * motor_pid.err_next + motor_pid.err_last);
-    /*传递误差*/
-    motor_pid.err_last = motor_pid.err_next;
-    motor_pid.err_next = motor_pid.err;
+        /*PID算法实现*/
+        Lmotor_pid.actual_val += Lmotor_pid.Kp * (Lmotor_pid.err - Lmotor_pid.err_next)
+                     +  Lmotor_pid.Ki *  Lmotor_pid.err
+                     +  Lmotor_pid.Kd * (Lmotor_pid.err - 2 * Lmotor_pid.err_next + Lmotor_pid.err_last);
+        /*传递误差*/
+        Lmotor_pid.err_last = Lmotor_pid.err_next;
+        Lmotor_pid.err_next = Lmotor_pid.err;
 
-    /*返回当前实际值*/
-    return motor_pid.actual_val;
+        /*返回当前实际值*/
+        return Lmotor_pid.actual_val;
+    }
+    else
+    {
+        /*计算目标值与实际值的误差*/
+        Rmotor_pid.err = Rmotor_pid.target_val - temp_val;
+
+        /*PID算法实现*/
+        Rmotor_pid.actual_val += Rmotor_pid.Kp * (Rmotor_pid.err - Rmotor_pid.err_next)
+                     +  Rmotor_pid.Ki *  Rmotor_pid.err
+                     +  Rmotor_pid.Kd * (Rmotor_pid.err - 2 * Rmotor_pid.err_next + Rmotor_pid.err_last);
+        /*传递误差*/
+        Rmotor_pid.err_last = Rmotor_pid.err_next;
+        Rmotor_pid.err_next = Rmotor_pid.err;
+
+        /*返回当前实际值*/
+        return Rmotor_pid.actual_val;
+    }
 }

@@ -5,9 +5,6 @@
  *      Author: «Â√Œ
  */
 
-#ifndef LAIQU_C_
-#define LAIQU_C_
-
 #include "laiqu.h"
 
 void laiInit()
@@ -45,5 +42,3 @@ void sendDistData()
 {
     dm1xa_transmitter_ranging();
 }
-
-#endif /* LAIQU_C_ */
