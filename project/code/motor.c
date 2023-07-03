@@ -82,6 +82,7 @@ void motor_control(int32 duty_1, int32 duty_2)
 
 
 _pid Lmotor_pid, Rmotor_pid;
+uint8 Lindex=1, Rindex=1;
 
 /**
   * @brief  PID参数初始化
@@ -98,7 +99,7 @@ void PID_param_init()
   Lmotor_pid.err_next = 0.0;
   Lmotor_pid.Kp = 0.06;
   Lmotor_pid.Ki = 0.000038;
-  Lmotor_pid.Kd = 0;//.05;
+  Lmotor_pid.Kd = 0;;
 
   Rmotor_pid.target_val=0;
   Rmotor_pid.actual_val=0.0;
@@ -107,7 +108,7 @@ void PID_param_init()
   Rmotor_pid.err_next = 0.0;
   Rmotor_pid.Kp = 0.06;
   Rmotor_pid.Ki = 0.000038;
-  Rmotor_pid.Kd = 0;//.05;
+  Rmotor_pid.Kd = 0;;
 }
 
 /**
@@ -165,9 +166,15 @@ float PID_realize(uint8 LR, float temp_val)
         /*计算目标值与实际值的误差*/
         Lmotor_pid.err = Lmotor_pid.target_val - temp_val;
 
+//        // 积分分离
+//        if(my_abs(Lmotor_pid.err)<5)
+//            Lindex=0;
+//        else
+//            Lindex=1;
+
         /*PID算法实现*/
         Lmotor_pid.actual_val += Lmotor_pid.Kp * (Lmotor_pid.err - Lmotor_pid.err_next)
-                     +  Lmotor_pid.Ki *  Lmotor_pid.err
+                     +  Lindex * Lmotor_pid.Ki *  Lmotor_pid.err
                      +  Lmotor_pid.Kd * (Lmotor_pid.err - 2 * Lmotor_pid.err_next + Lmotor_pid.err_last);
         /*传递误差*/
         Lmotor_pid.err_last = Lmotor_pid.err_next;
@@ -181,9 +188,14 @@ float PID_realize(uint8 LR, float temp_val)
         /*计算目标值与实际值的误差*/
         Rmotor_pid.err = Rmotor_pid.target_val - temp_val;
 
+//        if(my_abs(Rmotor_pid.err)<5)
+//            Rindex=0;
+//        else
+//            Rindex=1;
+
         /*PID算法实现*/
         Rmotor_pid.actual_val += Rmotor_pid.Kp * (Rmotor_pid.err - Rmotor_pid.err_next)
-                     +  Rmotor_pid.Ki *  Rmotor_pid.err
+                     +  Rindex * Rmotor_pid.Ki *  Rmotor_pid.err
                      +  Rmotor_pid.Kd * (Rmotor_pid.err - 2 * Rmotor_pid.err_next + Rmotor_pid.err_last);
         /*传递误差*/
         Rmotor_pid.err_last = Rmotor_pid.err_next;

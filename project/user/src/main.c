@@ -17,6 +17,15 @@ uint16 distance=0;
 uint16 obstacle_cnt=0;
 uint8 obstacle_phase=0;
 
+// 调试相关
+#if MOTOR_DEBUG_STATUS
+#if CAR_TYPE
+    float target_pulse[3] = {15, 30, 45};
+#else
+    float target_pulse[3] = {10, 20, 30};
+#endif
+#endif
+
 int main (void)
 {
 
@@ -43,20 +52,6 @@ int main (void)
     key_init(5);
 #endif
 
-#if SERVO_DEBUG_STATUS
-    uint8 key_status = 0;               // 0调整p，1调整d
-#endif
-
-#if MOTOR_DEBUG_STATUS
-    uint8 key_status = 0;               // 0电机目标速度调整，1pid参数调整
-    uint8 key_ChangeWhichOf_pid = 0;    // 0调整p，1调整i,2调整d
-#if CAR_TYPE
-    float target_pulse[3] = {25, 45, 65};
-#else
-    float target_pulse[3] = {10, 30, 50};
-#endif
-#endif
-
     PID_param_init();
     // 1m/s 54pulse/5ms
 
@@ -68,104 +63,31 @@ int main (void)
         // 此处编写需要循环执行的代码
 #if MOTOR_DEBUG_STATUS
         key_scanner();
-        if(key_status)
-        {// change motor target pulse
-            switch(key_get_state(KEY_1))
-            {
-                case KEY_SHORT_PRESS:
-                case KEY_LONG_PRESS:
-                    set_pid_target(target_pulse[0]);
-                    break;
-            }
-            switch(key_get_state(KEY_2))
-            {
-                case KEY_SHORT_PRESS:
-                case KEY_LONG_PRESS:
-                    set_pid_target(target_pulse[1]);
-                    break;
-            }
-            switch(key_get_state(KEY_3))
-            {
-                case KEY_SHORT_PRESS:
-                case KEY_LONG_PRESS:
-                    set_pid_target(target_pulse[2]);
-                    break;
-            }
-        }
-        else
-        {// change motor pid
-            switch(key_get_state(KEY_1))
-            {
-                case KEY_SHORT_PRESS:
-                case KEY_LONG_PRESS:
-                    if(key_ChangeWhichOf_pid==0)
-                        set_p_i_d(Lmotor_pid.Kp+0.001, Lmotor_pid.Ki, Lmotor_pid.Kd);
-                    else if(key_ChangeWhichOf_pid==1)
-                        set_p_i_d(Lmotor_pid.Kp, Lmotor_pid.Ki+0.000001, Lmotor_pid.Kd);
-                    else if(key_ChangeWhichOf_pid==2)
-                        set_p_i_d(Lmotor_pid.Kp, Lmotor_pid.Ki, Lmotor_pid.Kd+0.01);
-                    break;
-            }
-            switch(key_get_state(KEY_2))
-            {
-                case KEY_SHORT_PRESS:
-                case KEY_LONG_PRESS:
-                    if(key_ChangeWhichOf_pid==0)
-                        set_p_i_d(Lmotor_pid.Kp-0.001, Lmotor_pid.Ki, Lmotor_pid.Kd);
-                    else if(key_ChangeWhichOf_pid==1)
-                        set_p_i_d(Lmotor_pid.Kp, Lmotor_pid.Ki-0.000001, Lmotor_pid.Kd);
-                    else if(key_ChangeWhichOf_pid==2)
-                        set_p_i_d(Lmotor_pid.Kp, Lmotor_pid.Ki, Lmotor_pid.Kd-0.01);
-                    break;
-            }
-            switch(key_get_state(KEY_3))
-            {
-                case KEY_SHORT_PRESS:
-                case KEY_LONG_PRESS:
-                    key_ChangeWhichOf_pid++;
-                    key_ChangeWhichOf_pid%=3;
-                    break;
-            }
-        }
-
-        switch(key_get_state(KEY_4))
-        {
-            case KEY_SHORT_PRESS:
-            case KEY_LONG_PRESS:
-                key_status++;
-                key_status%=2;
-                break;
-        }
-#endif
-
-#if SERVO_DEBUG_STATUS
-        key_scanner();
         switch(key_get_state(KEY_1))
         {
             case KEY_SHORT_PRESS:
             case KEY_LONG_PRESS:
-                if(key_status==0)
-                    elec_Kp+=0.1;
-                else if(key_status==1)
-                    elec_Kd+=0.01;
+                set_pid_target(target_pulse[0]);
+                break;
+            default:
                 break;
         }
         switch(key_get_state(KEY_2))
         {
             case KEY_SHORT_PRESS:
             case KEY_LONG_PRESS:
-                if(key_status==0)
-                    elec_Kp-=0.1;
-                else if(key_status==1)
-                    elec_Kd-=0.01;
+                set_pid_target(target_pulse[1]);
+                break;
+            default:
                 break;
         }
         switch(key_get_state(KEY_3))
         {
             case KEY_SHORT_PRESS:
             case KEY_LONG_PRESS:
-                key_status++;
-                key_status%=2;
+                set_pid_target(target_pulse[2]);
+                break;
+            default:
                 break;
         }
 #endif
@@ -212,8 +134,6 @@ void ips200_show()
     ips200_show_float(40, 160, Rmotor_pid.Ki, 2, 6);
     ips200_show_string(0, 180, "Kd");
     ips200_show_float(40, 180, Rmotor_pid.Kd, 2, 6);
-
-//    ips200_show_int(0, 200, judgeStopline(), 2);
 
 #elif SERVO_DEBUG_STATUS
     ips200_show_string(0, 80, "servo pid:");
@@ -297,7 +217,9 @@ void elec_handler()
     {
         judgement();
         CURRENT_STATUS = Status_Common;
+#if !MOTOR_DEBUG_STATUS
         set_pid_target(15);
+#endif
     }
     else if(left_circle_flag || right_circle_flag)
     {
