@@ -83,9 +83,9 @@ void Read_ADC()
     adc_RR=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//ÓÒºá
 #else
     adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN12_C2, 10));//×óÊú
-    adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN13_C3, 10));//ÓÒÊú
-    adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN14_C4, 10));//×óºá
-    adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN15_C5, 10));//ÓÒºá
+    adc_L=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN13_C3, 10));//ÓÒÊú
+    adc_R=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN14_C4, 10));//×óºá
+    adc_RR=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN15_C5, 10));//ÓÒºá
 #endif
 
     adc_LL = Normal(adc_LL);

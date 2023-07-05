@@ -7,6 +7,7 @@
 #include "motor.h"
 
 int16 pulseCount_1, pulseCount_2;
+int16 pulsesum_1, pulsesum_2;
 int16 motorPWML=0, motorPWMR=0;
 
 void motor_init(void)
@@ -36,7 +37,8 @@ int16 Speed_Low_Filter(float new_Spe,float *speed_Record)
     return (int16)sum/SPEED_RECORD_NUM;//返回均值
 }
 
-void getPulseCount(){
+void getPulseCount()
+{
     pulseCount_1 = abs(encoder_get_count(ENCODER_1)/5);// 获取编码器计数
     pulseCount_2 = abs(encoder_get_count(ENCODER_2)/5);// 获取编码器计数
     encoder_clear_count(ENCODER_1);// 清空编码器计数
@@ -44,6 +46,8 @@ void getPulseCount(){
 
     pulseCount_1 = Speed_Low_Filter(pulseCount_1, speed_Record1);
     pulseCount_2 = Speed_Low_Filter(pulseCount_2, speed_Record2);
+
+
 }
 
 void motor_control(int32 duty_1, int32 duty_2)
