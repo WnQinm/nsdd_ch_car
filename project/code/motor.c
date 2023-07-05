@@ -7,7 +7,7 @@
 #include "motor.h"
 
 int16 pulseCount_1, pulseCount_2;
-int16 motorPWML=800, motorPWMR=800;
+int16 motorPWML=0, motorPWMR=0;
 
 void motor_init(void)
 {

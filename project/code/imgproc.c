@@ -303,6 +303,26 @@ void Draw_Side()
     }
 }
 
+// ÅÐ¶Ï°ßÂíÏß
+bool isStopLine()
+{
+//    ips200_draw_line(0,RESULT_ROW/2,RESULT_COL-1,RESULT_ROW/2,RGB565_PINK);
+    uint8 flipCnt=0;
+    uint8 previousColor=_img[RESULT_ROW/2][0];
+    for(int i=1;i<RESULT_COL;i++){
+        if(_img[RESULT_ROW/2][i]!=previousColor){
+            flipCnt++;
+            previousColor=_img[RESULT_ROW/2][i];
+        }
+    }
+//    ips200_show_int(0,0,flipCnt,3);
+    if(flipCnt>=5){
+        return true;
+    }else{
+        return false;
+    }
+}
+
 void ImageProcess()
 {
     // 0ms+

@@ -50,6 +50,7 @@ extern uint8 _img[RESULT_ROW][RESULT_COL];
 void track_Left_Line();
 void track_Right_Line();
 void Draw_Side();
+bool isStopLine();
 
 void ImageProcess();
 void ImagePerspective_Init(void);

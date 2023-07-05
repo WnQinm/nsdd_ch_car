@@ -20,7 +20,7 @@ uint8 obstacle_phase=0;
 // 调试相关
 #if MOTOR_DEBUG_STATUS
 #if CAR_TYPE
-    float target_pulse[3] = {15, 30, 45};
+    float target_pulse[3] = {15, 23, 30};
 #else
     float target_pulse[3] = {10, 20, 30};
 #endif
@@ -49,11 +49,19 @@ int main (void)
 #if MOTOR_DEBUG_STATUS || SERVO_DEBUG_STATUS
 //    uart_init(UART_3, 115200, UART3_MAP0_TX_B10, UART3_MAP0_RX_B11);
     bluetooth_ch9141_init();
-    key_init(5);
 #endif
 
+    key_init(5);
     PID_param_init();
     // 1m/s 54pulse/5ms
+
+//#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+//    out_garage();
+//#endif
+//
+//    motorPWML = 1200;
+//    motorPWMR = 1200;
+//    set_pid_target(15);
 
     Main_pit_init();
 
@@ -95,6 +103,14 @@ int main (void)
         if(mt9v03x_finish_flag)
         {
             img_handler();
+
+//#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+//            if(isStopLine())
+//            {
+//                in_garage_flag=isStopLine();
+//            }
+//#endif
+
             mt9v03x_finish_flag = 0;
         }
         // 此处编写需要循环执行的代码
@@ -213,7 +229,7 @@ void elec_handler()
         }
     }
 
-    if(!left_circle_flag && !right_circle_flag && !obstacle_flag)
+    if(!left_circle_flag && !right_circle_flag && !obstacle_flag && !in_garage_flag)
     {
         judgement();
         CURRENT_STATUS = Status_Common;
@@ -607,6 +623,10 @@ void elec_handler()
 //                break;
 //        }
 //    }
+    else if(in_garage_flag)
+    {
+        In_Garage();
+    }
 
     //电池电量检测
 //    if(elec_handler_cnt%Delay_cnt_calc(5000)){
