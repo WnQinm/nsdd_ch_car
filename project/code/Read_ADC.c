@@ -9,7 +9,7 @@
 #if CAR_TYPE
 float ADC_MAX = 235,ADC_MIN = 0;
 #else
-float ADC_MAX = 115,ADC_MIN = 0;
+float ADC_MAX = 235,ADC_MIN = 0;
 #endif
 float voltage_now=0;
 uint16 adc_LL,adc_L,adc_R,adc_RR;//µç¸Ð²É¼¯Öµ     | - - |
@@ -78,9 +78,9 @@ void Read_ADC()
 {
 #if CAR_TYPE
     adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN7_A7, 10));//×óÊú
-    adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//ÓÒÊú
-    adc_L=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//×óºá
-    adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//ÓÒºá
+    adc_L=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//ÓÒÊú
+    adc_R=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//×óºá
+    adc_RR=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//ÓÒºá
 #else
     adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN12_C2, 10));//×óÊú
     adc_RR=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN13_C3, 10));//ÓÒÊú

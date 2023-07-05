@@ -10,6 +10,6 @@
 
 void Main_pit_init()
 {
-    pit_us_init(MAIN_PIT_CH, 500);
+    pit_ms_init(MAIN_PIT_CH, 1);
     interrupt_set_priority(MAIN_PIT_PRIORITY, (4<<5)|5);
 }

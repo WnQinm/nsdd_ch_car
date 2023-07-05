@@ -8,7 +8,9 @@
 #ifndef JUDGEMENT_H_
 #define JUDGEMENT_H_
 
-#define CROSS_DELAY_TIME 3000
+// todo 后面速度高了要调小这里，否则会延迟判断十字
+// 过十字的时间，防止在过十字期间重复判断十字
+#define CROSS_DELAY_TIME 1500
 
 // 道路状态枚举
 // 或许可以吧循右线放这里

@@ -22,9 +22,9 @@
 #define ENCODER_2_B                 (TIM9_ENCOEDER_MAP3_CH2_D11)
 
 
-#define MAIN_PIT_ms_INTERVAL        0.5
-#define MAIN_PIT_us_INTERVAL        500
-#define Delay_cnt_calc(x)    (x*1000/MAIN_PIT_us_INTERVAL)
+#define MAIN_PIT_ms_INTERVAL        1
+#define MAIN_PIT_us_INTERVAL        1000
+#define Delay_cnt_calc(x)    (x)
 
 void Main_pit_init();
 

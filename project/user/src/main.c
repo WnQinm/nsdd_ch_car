@@ -248,7 +248,7 @@ void elec_handler()
                 case 1:// step1 避开第一个断口(正常巡线应该就行)
                     CURRENT_STATUS = Status_Common;
 
-                    if(++cnt>Delay_cnt_calc(500) && adc_LL>circle_threshold)
+                    if(adc_LL>circle_threshold)
                     {
                         circle_status++;
                         cnt = 0;
@@ -265,7 +265,41 @@ void elec_handler()
                         cross_flag = true;
                     }
                     break;
-                case 2:// step2 第二个断口入环，强行扭头入环
+                case 2:
+                    CURRENT_STATUS = Status_Common;
+                    if(adc_LL<circle_threshold/2 && adc_RR<circle_threshold)
+                    {
+                        circle_status++;
+                        break;
+                    }
+                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                    {
+                        circle_status = 0;
+                        cnt = 0;
+                        left_circle_flag = false;
+                        cross_cnt = 0;
+                        cross_flag = true;
+                    }
+                    break;
+                case 3:
+                    CURRENT_STATUS = Status_Common;
+                    if(adc_LL>circle_threshold-circle_threshold/10 && adc_RR<circle_threshold)
+                    {
+                        circle_status++;
+                        break;
+                    }
+                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                    {
+                        circle_status = 0;
+                        cnt = 0;
+                        left_circle_flag = false;
+                        cross_cnt = 0;
+                        cross_flag = true;
+                    }
+                    break;
+                case 4:// step2 第二个断口入环，强行扭头入环
                     CURRENT_STATUS = Status_Stop;
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(100));
                     if(++cnt>Delay_cnt_calc(500))
@@ -274,14 +308,14 @@ void elec_handler()
                         cnt = 0;
                     }
                     break;
-                case 3:// step3 正常巡线
+                case 5:// step3 正常巡线
                     CURRENT_STATUS = Status_Common;
                     if(adc_RR>circle_threshold)
                     {
                         circle_status++;
                     }
                     break;
-                case 4:// step4 出环（正常巡线应该可以）
+                case 6:// step4 出环（正常巡线应该可以）
                     CURRENT_STATUS = Status_Stop;
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(98));
                     if(++cnt>Delay_cnt_calc(750))// && adc_LL<circle_threshold
@@ -290,7 +324,7 @@ void elec_handler()
                         cnt = 0;
                     }
                     break;
-                case 5:// step5 出环后
+                case 7:// step5 出环后
                     CURRENT_STATUS = Status_Common;
                     if(++cnt>Delay_cnt_calc(500))
                     {
@@ -308,7 +342,7 @@ void elec_handler()
                 case 1:// step1 避开第一个断口(正常巡线应该就行)
                     CURRENT_STATUS = Status_Common;
 
-                    if(++cnt>Delay_cnt_calc(500) && adc_RR>circle_threshold)
+                    if(adc_RR>circle_threshold)
                     {
                         circle_status++;
                         cnt = 0;
@@ -325,7 +359,41 @@ void elec_handler()
                         cross_flag = true;
                     }
                     break;
-                case 2:// step2 第二个断口入环，强行扭头入环
+                case 2:
+                    CURRENT_STATUS = Status_Common;
+                    if(adc_RR<circle_threshold/2 && adc_LL<circle_threshold)
+                    {
+                        circle_status++;
+                        break;
+                    }
+                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                    {
+                        circle_status = 0;
+                        cnt = 0;
+                        right_circle_flag = false;
+                        cross_cnt = 0;
+                        cross_flag = true;
+                    }
+                    break;
+                case 3:
+                    CURRENT_STATUS = Status_Common;
+                    if(adc_RR>circle_threshold-circle_threshold/10 && adc_LL<circle_threshold)
+                    {
+                        circle_status++;
+                        break;
+                    }
+                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                    {
+                        circle_status = 0;
+                        cnt = 0;
+                        right_circle_flag = false;
+                        cross_cnt = 0;
+                        cross_flag = true;
+                    }
+                    break;
+                case 4:// step2 第二个断口入环，强行扭头入环
                     CURRENT_STATUS = Status_Stop;
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
                     if(++cnt>Delay_cnt_calc(750))
@@ -334,14 +402,14 @@ void elec_handler()
                         cnt = 0;
                     }
                     break;
-                case 3:// step3 正常巡线
+                case 5:// step3 正常巡线
                     CURRENT_STATUS = Status_Common;
                     if(adc_LL>circle_threshold)
                     {
                         circle_status++;
                     }
                     break;
-                case 4:// step4 出环（正常巡线应该可以）
+                case 6:// step4 出环（正常巡线应该可以）
                     CURRENT_STATUS = Status_Stop;
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
                     if(++cnt>Delay_cnt_calc(1000))
@@ -350,7 +418,7 @@ void elec_handler()
                         cnt = 0;
                     }
                     break;
-                case 5:// step5 出环后
+                case 7:// step5 出环后
                     CURRENT_STATUS = Status_Common;
                     if(++cnt>Delay_cnt_calc(500))
                     {
@@ -638,6 +706,8 @@ void elec_handler()
     }else{
         elec_handler_cnt++;
     }
+
+
 
 }
 
