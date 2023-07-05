@@ -51,7 +51,7 @@ void servo_control(RaceStatus status)
                                          (int16)(current_err_Lcamera*ENLARGE_TIME),
                                          (int16)(current_err_Rcamera*ENLARGE_TIME));
 //        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
-    bluetooth_ch9141_send_buff(virtual_oscilloscope_data, 10);
+//    bluetooth_ch9141_send_buff(virtual_oscilloscope_data, 10);
 #endif
     switch (status)
     {
@@ -65,8 +65,13 @@ void servo_control(RaceStatus status)
     // ╫г╤хоч╥Ы
     if(Angle<75) Angle=75;
     if(Angle>105) Angle=105;
+#if ANGLE_90_MODE
+    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+#else
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(Angle));
+#endif
 }
+
 
 void elec_pid(float current_err)
 {

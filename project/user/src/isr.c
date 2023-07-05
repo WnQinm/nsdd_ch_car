@@ -344,6 +344,63 @@ void TIM6_IRQHandler(void)
 
        servo_control(CURRENT_STATUS);
 
+
+#if MOTOR_DEBUG_STATUS
+        if(elec_handler_cnt%Delay_cnt_calc(500)==2){
+        static char buff[64];
+        static char *end;
+        uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
+        if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
+        {
+            //输入示例：p0.01
+            switch (buff[0]) {
+                case 'p':
+                    Lmotor_pid.Kp=strtof(&buff[1],&end);
+                    Rmotor_pid.Kp=strtof(&buff[1],&end);
+                    break;
+                case 'i':
+                    Lmotor_pid.Ki=strtof(&buff[1],&end);
+                    Rmotor_pid.Ki=strtof(&buff[1],&end);
+                    break;
+                case 'd':
+                    Lmotor_pid.Kd=strtof(&buff[1],&end);
+                    Rmotor_pid.Kd=strtof(&buff[1],&end);
+                    break;
+                case 'v':
+                    set_pid_target(strtof(&buff[1],&end));
+                    break;
+            }
+
+            memset(buff, 0, 64);//清空缓冲区
+        }
+    }
+#elif SERVO_DEBUG_STATUS
+        if(elec_handler_cnt%Delay_cnt_calc(500)==2){
+            static char buff[64];
+            static char *end;
+            uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
+            if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
+            {
+                bool isModified=true;
+                //输入示例：p0.01
+                switch (buff[0]) {
+                    case 'p':
+                        elec_Kp = strtof(&buff[1],&end);
+                        break;
+                    case 'd':
+                        elec_Kd = strtof(&buff[1],&end);
+                        break;
+                    case 'v':
+                        set_pid_target(strtof(&buff[1],&end));
+                        break;
+                    default:
+                        isModified=false;
+                }
+                memset(buff, 0, 64);//清空缓冲区
+            }
+        }
+#endif
+
     }
 }
 

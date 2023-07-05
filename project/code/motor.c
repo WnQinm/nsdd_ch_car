@@ -96,23 +96,23 @@ uint8 Lindex=1, Rindex=1;
 void PID_param_init()
 {
   /* 初始化参数 */
-  Lmotor_pid.target_val=0;
-  Lmotor_pid.actual_val=0.0;
-  Lmotor_pid.err = 0.0;
-  Lmotor_pid.err_last = 0.0;
-  Lmotor_pid.err_next = 0.0;
-  Lmotor_pid.Kp = 0.06;
-  Lmotor_pid.Ki = 0.000038;
-  Lmotor_pid.Kd = 0;;
+  Lmotor_pid.target_val=0.0f;
+  Lmotor_pid.actual_val=0.0f;
+  Lmotor_pid.err = 0.0f;
+  Lmotor_pid.err_last = 0.0f;
+  Lmotor_pid.err_next = 0.0f;
+  Lmotor_pid.Kp = 0.6f;
+  Lmotor_pid.Ki = 0.000038f;
+  Lmotor_pid.Kd = 0.0f;
 
-  Rmotor_pid.target_val=0;
-  Rmotor_pid.actual_val=0.0;
-  Rmotor_pid.err = 0.0;
-  Rmotor_pid.err_last = 0.0;
-  Rmotor_pid.err_next = 0.0;
-  Rmotor_pid.Kp = 0.06;
-  Rmotor_pid.Ki = 0.000038;
-  Rmotor_pid.Kd = 0;;
+  Rmotor_pid.target_val=0.0f;
+  Rmotor_pid.actual_val=0.0f;
+  Rmotor_pid.err = 0.0f;
+  Rmotor_pid.err_last = 0.0f;
+  Rmotor_pid.err_next = 0.0f;
+  Rmotor_pid.Kp = 0.6f;
+  Rmotor_pid.Ki = 0.000038f;
+  Rmotor_pid.Kd = 0.0f;
 }
 
 /**

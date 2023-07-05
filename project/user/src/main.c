@@ -17,7 +17,8 @@ uint16 distance=0;
 uint16 obstacle_cnt=0;
 uint8 obstacle_phase=0;
 
-bool slope_flag = false;
+// 过坡道相关
+uint16 slope_cnt=0;
 
 // 调试相关
 #if MOTOR_DEBUG_STATUS
@@ -159,6 +160,9 @@ void ips200_show()
     ips200_show_float(40, 180, Rmotor_pid.Kd, 2, 6);
 
 #elif SERVO_DEBUG_STATUS
+    ips200_show_string(0, 60, "target pulse:");
+    ips200_show_int(100, 60, Lmotor_pid.target_val, 5);
+    ips200_show_int(150, 60, Rmotor_pid.target_val, 5);
     ips200_show_string(0, 80, "servo pid:");
     ips200_show_string(0, 100, "Kp:");
     ips200_show_float(40, 100, elec_Kp, 5, 5);
@@ -223,6 +227,20 @@ void elec_handler()
             motorPWML = 2000;
         if(motorPWMR>2000)
             motorPWMR=2000;
+        if(motorPWML<-2000)
+            motorPWML = -2000;
+        if(motorPWMR<-2000)
+            motorPWMR=-2000;
+
+        if(0<=motorPWML&&motorPWML<600)
+            motorPWML = 600;
+        if(0<=motorPWMR&&motorPWMR<600)
+            motorPWMR=600;
+        if(-600<motorPWML&&motorPWML<=0)
+            motorPWML = -600;
+        if(-600<motorPWMR&&motorPWMR<=0)
+            motorPWMR=-600;
+
 
         motor_control(motorPWML, motorPWMR);
     }
@@ -238,6 +256,13 @@ void elec_handler()
 //            printf("Obstacle!");
             obstacle_flag=true;
             obstacle_cnt=0;
+        }
+    }
+    //检测丢线
+    if(!front_diuxian_flag &&(elec_handler_cnt % Delay_cnt_calc(100)) == 0){
+        //todo 需要确定一个划分使正常使用时不误判
+        if(lostline_cnt>=10){
+            front_diuxian_flag=true;
         }
     }
 
@@ -286,6 +311,9 @@ void elec_handler()
                 case 'd':
                     elec_Kd = strtof(&buff[1],&end);
                     break;
+                case 'v':
+                    set_pid_target(strtof(&buff[1],&end));
+                    break;
                 default:
                     isModified=false;
             }
@@ -298,7 +326,7 @@ void elec_handler()
     {
         judgement();
         CURRENT_STATUS = Status_Common;
-#if !MOTOR_DEBUG_STATUS
+#if !MOTOR_DEBUG_STATUS&&!SERVO_DEBUG_STATUS
     set_pid_target(15);
 #endif
     }
@@ -685,78 +713,92 @@ void elec_handler()
         }
 #endif
     }
-//    else if(obstacle_flag)
-//    {
-//        set_pid_target(15);
-//        CURRENT_STATUS = Status_Stop;
-//        switch (obstacle_phase)
-//        {
-//            case 0:
-//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-//                if(obstacle_cnt>=Delay_cnt_calc(180)){
-//                    obstacle_cnt=0;
-//                    obstacle_phase=1;
-//                }else{
-//                    obstacle_cnt++;
-//                }
-//                break;
-//            case 1:
-//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-//                if(obstacle_cnt>=Delay_cnt_calc(600)){
-//                    obstacle_cnt=0;
-//                    obstacle_phase=2;
-//                }else{
-//                    obstacle_cnt++;
-//                }
-//                break;
-//            case 2:
-//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-//                if(obstacle_cnt>=Delay_cnt_calc(200)){
-//                    obstacle_cnt=0;
-//                    obstacle_phase=3;
-//                }else{
-//                    obstacle_cnt++;
-//                }
-//                break;
-//            case 3:
-//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-//                if(obstacle_cnt>=Delay_cnt_calc(300)){
-//                    obstacle_cnt=0;
-//                    obstacle_phase=4;
-//                }else{
-//                    obstacle_cnt++;
-//                }
-//                break;
-//            case 4:
-//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-//                if(obstacle_cnt>=Delay_cnt_calc(200)){
-//                    obstacle_cnt=0;
-//                    obstacle_phase=5;
-//                }else{
-//                    obstacle_cnt++;
-//                }
-//                break;
-//            case 5:
-//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-//                if(obstacle_cnt>=Delay_cnt_calc(600)){
-//                    obstacle_cnt=0;
-//                    obstacle_phase=6;
-//                }else{
-//                    obstacle_cnt++;
-//                }
-//                break;
-//            case 6:
-//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-//                if(obstacle_cnt>=Delay_cnt_calc(180)){
-//                    obstacle_cnt=0;
-//                    obstacle_phase=0;
-//                    obstacle_flag=false;
-//                }else{
-//                    obstacle_cnt++;
-//                }
-//                break;
-//        }
-//    }
+    else if(obstacle_flag && front_diuxian_flag)
+    {
+        set_pid_target(15);
+        CURRENT_STATUS = Status_Stop;
+        switch (obstacle_phase)
+        {
+            case 0:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+                if(obstacle_cnt>=Delay_cnt_calc(180)){
+                    obstacle_cnt=0;
+                    obstacle_phase=1;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 1:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_cnt>=Delay_cnt_calc(600)){
+                    obstacle_cnt=0;
+                    obstacle_phase=2;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 2:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                if(obstacle_cnt>=Delay_cnt_calc(200)){
+                    obstacle_cnt=0;
+                    obstacle_phase=3;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 3:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_cnt>=Delay_cnt_calc(300)){
+                    obstacle_cnt=0;
+                    obstacle_phase=4;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 4:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                if(obstacle_cnt>=Delay_cnt_calc(200)){
+                    obstacle_cnt=0;
+                    obstacle_phase=5;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 5:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_cnt>=Delay_cnt_calc(600)){
+                    obstacle_cnt=0;
+                    obstacle_phase=6;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+            case 6:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+                if(obstacle_cnt>=Delay_cnt_calc(180)){
+                    obstacle_cnt=0;
+                    obstacle_phase=0;
+                    obstacle_flag=false;
+                    front_diuxian_flag=false;
+                }else{
+                    obstacle_cnt++;
+                }
+                break;
+        }
+    }
+    else if(obstacle_flag && !front_diuxian_flag) {
+        if(slope_cnt==0) {
+            motor_control(1800,1800);
+        }
+        if(slope_cnt<Delay_cnt_calc(1000)) {
+            set_pid_target(35);
+            slope_cnt++;
+        }else {
+            slope_cnt=0;
+            obstacle_flag=false;
+            front_diuxian_flag=false;
+        }
+    }
     else if(in_garage_flag)
     {
         In_Garage();
