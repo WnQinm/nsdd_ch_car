@@ -30,5 +30,4 @@ typedef struct{
 extern float voltage_now;//电池电压
 extern float ADC_MAX,ADC_MIN;
 extern uint16 adc_LL,adc_L,adc_R,adc_RR;//电感采集值
-
 #endif /* READ_ADC_H_ */

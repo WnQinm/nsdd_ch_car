@@ -323,7 +323,6 @@ void TIM5_IRQHandler(void)
 #include "servo.h"
 #include "motor.h"
 extern void elec_handler();
-extern bool judgeStopline();
 void TIM6_IRQHandler(void)
 {
     if(TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET)

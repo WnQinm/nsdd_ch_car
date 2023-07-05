@@ -20,7 +20,7 @@ typedef enum
     Status_Common = 1,
     Status_Circle = 2,
     Status_LCamera = 3,
-    Status_RCamera = 4
+    Status_RCamera = 4,
 }RaceStatus;
 
 #include "zf_common_headfile.h"

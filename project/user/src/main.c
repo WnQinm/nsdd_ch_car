@@ -17,6 +17,8 @@ uint16 distance=0;
 uint16 obstacle_cnt=0;
 uint8 obstacle_phase=0;
 
+bool slope_flag = false;
+
 // 调试相关
 #if MOTOR_DEBUG_STATUS
 #if CAR_TYPE
@@ -46,18 +48,23 @@ int main (void)
 
     ImagePerspective_Init();
 
+// 如果没装蓝牙但是开启了发送可能由于高频IO而卡顿
 #if MOTOR_DEBUG_STATUS || SERVO_DEBUG_STATUS
 //    uart_init(UART_3, 115200, UART3_MAP0_TX_B10, UART3_MAP0_RX_B11);
-    bluetooth_ch9141_init();
+    while(bluetooth_ch9141_init())
+    {
+        ips200_show_string(0, 0, "bluetooth init failed");
+    }
+    ips200_clear();
 #endif
 
     key_init(5);
     PID_param_init();
     // 1m/s 54pulse/5ms
 
-//#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-//    out_garage();
-//#endif
+#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+    out_garage();
+#endif
 //
 //    motorPWML = 1200;
 //    motorPWMR = 1200;
@@ -158,6 +165,11 @@ void ips200_show()
     ips200_show_string(0, 120, "Kd:");
     ips200_show_float(40, 120, elec_Kd, 5, 5);
 #else
+    ips200_show_string(0, 70, "pulse count:");
+    ips200_show_int(100, 70, pulseCount_1, 5);
+    ips200_show_int(150, 70, pulseCount_2, 5);
+    ips200_show_string(0, 90, "target pulse:");
+    ips200_show_int(100, 90, get_pid_target(), 3);
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
@@ -234,7 +246,7 @@ void elec_handler()
         judgement();
         CURRENT_STATUS = Status_Common;
 #if !MOTOR_DEBUG_STATUS
-        set_pid_target(15);
+    set_pid_target(15);
 #endif
     }
     else if(left_circle_flag || right_circle_flag)
