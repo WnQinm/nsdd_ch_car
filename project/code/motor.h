@@ -33,13 +33,14 @@ typedef struct
     float Kp, Ki, Kd;     //定义比例、积分、微分系数
 }_pid;
 
-void motor_init(void);
+void motor_init();
 void motor_control(int32 duty_1, int32 duty_2);
 void getPulseCount();
 
 extern _pid Lmotor_pid, Rmotor_pid;
 extern int16 pulseCount_1, pulseCount_2;
 extern int16 motorPWML, motorPWMR;
+
 void PID_param_init();
 void set_pid_target(float temp_val);
 float get_pid_target(void);

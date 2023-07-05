@@ -36,7 +36,8 @@ int16 Speed_Low_Filter(float new_Spe,float *speed_Record)
     return (int16)sum/SPEED_RECORD_NUM;//返回均值
 }
 
-void getPulseCount(){
+void getPulseCount()
+{
     pulseCount_1 = abs(encoder_get_count(ENCODER_1)/5);// 获取编码器计数
     pulseCount_2 = abs(encoder_get_count(ENCODER_2)/5);// 获取编码器计数
     encoder_clear_count(ENCODER_1);// 清空编码器计数

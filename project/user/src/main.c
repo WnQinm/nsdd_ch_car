@@ -37,6 +37,7 @@ int main (void)
     motor_init();
     mt9v03x_init();
     ips200_init(IPS200_TYPE_PARALLEL8);
+
     ADC_init();
 //    tofInit();
 //    hallInit();
@@ -130,7 +131,7 @@ void ips200_show()
     ips200_show_gray_image(0,0,_img[0],RESULT_COL,RESULT_ROW,RESULT_COL,RESULT_ROW,0);
 //    camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
 //    bluetooth_ch9141_send_image((const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
-//    Draw_Side();
+    Draw_Side();
 
     ips200_show_string(110, 0, "Angle:");
     ips200_show_float(110, 20, Angle, 5, 2);
@@ -210,11 +211,11 @@ void elec_handler()
     {
         getPulseCount();
 
-#if MOTOR_DEBUG_STATUS
-        virtual_oscilloscope_data_conversion(pulseCount_1,pulseCount_2,motorPWML,motorPWMR);
-//        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
-        bluetooth_ch9141_send_buff(virtual_oscilloscope_data, 10);
-#endif
+//#if MOTOR_DEBUG_STATUS
+//        virtual_oscilloscope_data_conversion(pulseCount_1,pulseCount_2,motorPWML,motorPWMR);
+////        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
+//        bluetooth_ch9141_send_buff(virtual_oscilloscope_data, 10);
+//#endif
 
         motorPWML += PID_realize(0, pulseCount_1);
         motorPWMR += PID_realize(1, pulseCount_2);
@@ -240,6 +241,59 @@ void elec_handler()
             obstacle_cnt=0;
         }
     }
+
+#if MOTOR_DEBUG_STATUS
+    if(elec_handler_cnt%Delay_cnt_calc(500)==2){
+        static char buff[64];
+        static char *end;
+        uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
+        if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
+        {
+            //输入示例：p0.01
+            switch (buff[0]) {
+                case 'p':
+                    Lmotor_pid.Kp=strtof(&buff[1],&end);
+                    Rmotor_pid.Kp=strtof(&buff[1],&end);
+                    break;
+                case 'i':
+                    Lmotor_pid.Ki=strtof(&buff[1],&end);
+                    Rmotor_pid.Ki=strtof(&buff[1],&end);
+                    break;
+                case 'd':
+                    Lmotor_pid.Kd=strtof(&buff[1],&end);
+                    Rmotor_pid.Kd=strtof(&buff[1],&end);
+                    break;
+                case 'v':
+                    set_pid_target(strtof(&buff[1],&end));
+                    break;
+            }
+
+            memset(buff, 0, 64);//清空缓冲区
+        }
+    }
+#elif SERVO_DEBUG_STATUS
+    if(elec_handler_cnt%Delay_cnt_calc(500)==2){
+        static char buff[64];
+        static char *end;
+        uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
+        if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
+        {
+            bool isModified=true;
+            //输入示例：p0.01
+            switch (buff[0]) {
+                case 'p':
+                    elec_Kp = strtof(&buff[1],&end);
+                    break;
+                case 'd':
+                    elec_Kd = strtof(&buff[1],&end);
+                    break;
+                default:
+                    isModified=false;
+            }
+            memset(buff, 0, 64);//清空缓冲区
+        }
+    }
+#endif
 
     if(!left_circle_flag && !right_circle_flag && !obstacle_flag && !in_garage_flag)
     {
@@ -317,7 +371,7 @@ void elec_handler()
                     if(++cnt>Delay_cnt_calc(500))
                     {
                         circle_status++;
-                        cnt = 0;
+                        cnt=0;
                     }
                     break;
                 case 5:// step3 正常巡线
@@ -340,7 +394,7 @@ void elec_handler()
                     CURRENT_STATUS = Status_Common;
                     if(++cnt>Delay_cnt_calc(500))
                     {
-                        cnt = 0;
+                        cnt=0;
                         circle_status = 0;
                         left_circle_flag = false;
                     }
@@ -441,7 +495,7 @@ void elec_handler()
                     break;
             }
         }
-#else// 入环大小大
+#else
         if(left_circle_flag)
         {
             switch (circle_status)
@@ -449,7 +503,7 @@ void elec_handler()
                 case 1:// step1 避开第一个断口(正常巡线应该就行)
                     CURRENT_STATUS = Status_Common;
 
-                    if(++cnt>Delay_cnt_calc(2000) && adc_LL>circle_threshold)
+                    if(adc_LL>circle_threshold)
                     {
                         circle_status++;
                         cnt = 0;
@@ -468,7 +522,7 @@ void elec_handler()
                     break;
                 case 2:
                     CURRENT_STATUS = Status_Common;
-                    if(adc_LL<circle_threshold && adc_RR<circle_threshold)
+                    if(adc_LL<circle_threshold/2 && adc_RR<circle_threshold)
                     {
                         circle_status++;
                         break;
@@ -485,7 +539,7 @@ void elec_handler()
                     break;
                 case 3:
                     CURRENT_STATUS = Status_Common;
-                    if(adc_LL>circle_threshold && adc_RR<circle_threshold)
+                    if(adc_LL>circle_threshold-circle_threshold/10 && adc_RR<circle_threshold)
                     {
                         circle_status++;
                         break;
@@ -506,27 +560,27 @@ void elec_handler()
                     if(++cnt>Delay_cnt_calc(500))
                     {
                         circle_status++;
-                        cnt = 0;
+                        cnt=0;
                     }
                     break;
                 case 5:// step3 正常巡线
                     CURRENT_STATUS = Status_Common;
-                    if(adc_RR>circle_threshold)
+                    if(adc_RR>circle_threshold-cross_threshold/10)
                     {
                         circle_status++;
                     }
                     break;
                 case 6:// step4 出环
                     CURRENT_STATUS = Status_Stop;
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(98));
-                    if(++cnt>Delay_cnt_calc(750))// && adc_LL<circle_threshold
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(95));
+                    if(++cnt>Delay_cnt_calc(750))
                     {
                         circle_status++;
-                        cnt = 0;
+                        cnt=0;
                     }
                     break;
                 case 7:// step5 出环后
-                    CURRENT_STATUS = Status_Common;
+                    CURRENT_STATUS = Status_RCamera;
                     if(++cnt>Delay_cnt_calc(500))
                     {
                         cnt = 0;
@@ -542,7 +596,8 @@ void elec_handler()
             {
                 case 1:// step1 避开第一个断口(正常巡线应该就行)
                     CURRENT_STATUS = Status_Common;
-                    if(++cnt>Delay_cnt_calc(2000) && adc_RR>circle_threshold)
+
+                    if(adc_RR>circle_threshold)
                     {
                         circle_status++;
                         cnt = 0;
@@ -561,7 +616,7 @@ void elec_handler()
                     break;
                 case 2:
                     CURRENT_STATUS = Status_Common;
-                    if(adc_LL<circle_threshold && adc_RR<circle_threshold)
+                    if(adc_RR<circle_threshold/2 && adc_LL<circle_threshold)
                     {
                         circle_status++;
                         break;
@@ -578,7 +633,7 @@ void elec_handler()
                     break;
                 case 3:
                     CURRENT_STATUS = Status_Common;
-                    if(adc_LL<circle_threshold && adc_RR>circle_threshold)
+                    if(adc_RR>circle_threshold-circle_threshold/10 && adc_LL<circle_threshold)
                     {
                         circle_status++;
                         break;
@@ -599,32 +654,32 @@ void elec_handler()
                     if(++cnt>Delay_cnt_calc(500))
                     {
                         circle_status++;
-                        cnt = 0;
+                        cnt=0;
                     }
                     break;
                 case 5:// step3 正常巡线
                     CURRENT_STATUS = Status_Common;
-                    if(adc_LL>circle_threshold)
+                    if(adc_LL>circle_threshold-cross_threshold/10)
                     {
                         circle_status++;
                     }
                     break;
-                case 6:// step4 出环
+                case 6:// step4 出环（正常巡线应该可以）
                     CURRENT_STATUS = Status_Stop;
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
-                    if(++cnt>Delay_cnt_calc(750))// && adc_LL<circle_threshold
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(85));
+                    if(++cnt>Delay_cnt_calc(750))
                     {
                         circle_status++;
-                        cnt = 0;
+                        cnt=0;
                     }
                     break;
                 case 7:// step5 出环后
-                    CURRENT_STATUS = Status_Common;
+                    CURRENT_STATUS = Status_LCamera;
                     if(++cnt>Delay_cnt_calc(500))
                     {
                         cnt = 0;
                         circle_status = 0;
-                        left_circle_flag = false;
+                        right_circle_flag = false;
                     }
                     break;
             }
