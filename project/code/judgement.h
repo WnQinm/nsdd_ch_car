@@ -38,5 +38,6 @@ extern uint8 circle_threshold, cross_threshold;
 extern uint8 circle_status;
 extern uint16 cross_cnt;
 extern bool out_flag;
+extern bool slope_flag;
 
 #endif /* JUDGEMENT_H_ */

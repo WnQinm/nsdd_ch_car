@@ -17,7 +17,7 @@ uint16 distance=0;
 uint16 obstacle_cnt=0;
 uint8 obstacle_phase=0;
 
-bool slope_flag = false;
+float tmp_angle=90;
 
 // 调试相关
 #if MOTOR_DEBUG_STATUS
@@ -229,73 +229,75 @@ void elec_handler()
     }
 
     // 红外避障
-    if (!obstacle_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
+    if (!obstacle_flag && !slope_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
     {
         // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
         distance = Get_Distance();
-//        printf("Dis: %d",distance);
-        if (distance <= 600)
+        if (distance <= 600 && lostline_cnt>Road_Width_Min)
         {
-//            printf("Obstacle!");
             obstacle_flag=true;
             obstacle_cnt=0;
         }
-    }
-
-#if MOTOR_DEBUG_STATUS
-    if(elec_handler_cnt%Delay_cnt_calc(500)==2){
-        static char buff[64];
-        static char *end;
-        uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
-        if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
+        else if(distance <= 600 && lostline_cnt<=Road_Width_Min)
         {
-            //输入示例：p0.01
-            switch (buff[0]) {
-                case 'p':
-                    Lmotor_pid.Kp=strtof(&buff[1],&end);
-                    Rmotor_pid.Kp=strtof(&buff[1],&end);
-                    break;
-                case 'i':
-                    Lmotor_pid.Ki=strtof(&buff[1],&end);
-                    Rmotor_pid.Ki=strtof(&buff[1],&end);
-                    break;
-                case 'd':
-                    Lmotor_pid.Kd=strtof(&buff[1],&end);
-                    Rmotor_pid.Kd=strtof(&buff[1],&end);
-                    break;
-                case 'v':
-                    set_pid_target(strtof(&buff[1],&end));
-                    break;
-            }
-
-            memset(buff, 0, 64);//清空缓冲区
+            slope_flag = true;
         }
     }
-#elif SERVO_DEBUG_STATUS
-    if(elec_handler_cnt%Delay_cnt_calc(500)==2){
-        static char buff[64];
-        static char *end;
-        uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
-        if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
-        {
-            bool isModified=true;
-            //输入示例：p0.01
-            switch (buff[0]) {
-                case 'p':
-                    elec_Kp = strtof(&buff[1],&end);
-                    break;
-                case 'd':
-                    elec_Kd = strtof(&buff[1],&end);
-                    break;
-                default:
-                    isModified=false;
-            }
-            memset(buff, 0, 64);//清空缓冲区
-        }
-    }
-#endif
 
-    if(!left_circle_flag && !right_circle_flag && !obstacle_flag && !in_garage_flag)
+//#if MOTOR_DEBUG_STATUS
+//    if(elec_handler_cnt%Delay_cnt_calc(500)==2){
+//        static char buff[64];
+//        static char *end;
+//        uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
+//        if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
+//        {
+//            //输入示例：p0.01
+//            switch (buff[0]) {
+//                case 'p':
+//                    Lmotor_pid.Kp=strtof(&buff[1],&end);
+//                    Rmotor_pid.Kp=strtof(&buff[1],&end);
+//                    break;
+//                case 'i':
+//                    Lmotor_pid.Ki=strtof(&buff[1],&end);
+//                    Rmotor_pid.Ki=strtof(&buff[1],&end);
+//                    break;
+//                case 'd':
+//                    Lmotor_pid.Kd=strtof(&buff[1],&end);
+//                    Rmotor_pid.Kd=strtof(&buff[1],&end);
+//                    break;
+//                case 'v':
+//                    set_pid_target(strtof(&buff[1],&end));
+//                    break;
+//            }
+//
+//            memset(buff, 0, 64);//清空缓冲区
+//        }
+//    }
+//#elif SERVO_DEBUG_STATUS
+//    if(elec_handler_cnt%Delay_cnt_calc(500)==2){
+//        static char buff[64];
+//        static char *end;
+//        uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
+//        if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
+//        {
+//            bool isModified=true;
+//            //输入示例：p0.01
+//            switch (buff[0]) {
+//                case 'p':
+//                    elec_Kp = strtof(&buff[1],&end);
+//                    break;
+//                case 'd':
+//                    elec_Kd = strtof(&buff[1],&end);
+//                    break;
+//                default:
+//                    isModified=false;
+//            }
+//            memset(buff, 0, 64);//清空缓冲区
+//        }
+//    }
+//#endif
+
+    if(!left_circle_flag && !right_circle_flag && !obstacle_flag && !slope_flag && !in_garage_flag)
     {
         judgement();
         CURRENT_STATUS = Status_Common;
@@ -376,15 +378,17 @@ void elec_handler()
                     break;
                 case 5:// step3 正常巡线
                     CURRENT_STATUS = Status_Common;
-                    if(adc_RR>circle_threshold)
+                    tmp_angle = (tmp_angle+Angle)/2;
+                    if(adc_RR>circle_threshold-circle_threshold/10*2)
                     {
                         circle_status++;
+                        tmp_angle = tmp_angle+2;
                     }
                     break;
                 case 6:// step4 出环（正常巡线应该可以）
                     CURRENT_STATUS = Status_Stop;
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(98));
-                    if(++cnt>Delay_cnt_calc(750))// && adc_LL<circle_threshold
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(tmp_angle));
+                    if(++cnt>Delay_cnt_calc(500))
                     {
                         circle_status++;
                         cnt = 0;
@@ -462,7 +466,7 @@ void elec_handler()
                 case 4:// step2 第二个断口入环，强行扭头入环
                     CURRENT_STATUS = Status_Stop;
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
-                    if(++cnt>Delay_cnt_calc(750))
+                    if(++cnt>Delay_cnt_calc(500))
                     {
                         circle_status++;
                         cnt = 0;
@@ -470,15 +474,17 @@ void elec_handler()
                     break;
                 case 5:// step3 正常巡线
                     CURRENT_STATUS = Status_Common;
-                    if(adc_LL>circle_threshold)
+                    tmp_angle = (tmp_angle+Angle)/2;
+                    if(adc_LL>circle_threshold-circle_threshold/10*2)
                     {
                         circle_status++;
+                        tmp_angle=tmp_angle-3;
                     }
                     break;
                 case 6:// step4 出环（正常巡线应该可以）
                     CURRENT_STATUS = Status_Stop;
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
-                    if(++cnt>Delay_cnt_calc(1000))
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(tmp_angle));
+                    if(++cnt>Delay_cnt_calc(500))
                     {
                         circle_status++;
                         cnt = 0;
