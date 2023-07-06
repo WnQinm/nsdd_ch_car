@@ -36,11 +36,17 @@
 #ifndef _zf_device_config_h_
 #define _zf_device_config_h_
 
+#include "zf_driver_delay.h"
+
 extern const unsigned char imu660ra_config_file[8192];
 
 unsigned char   mt9v03x_set_config_sccb         (void *soft_iic_obj, short int buff[10][2]);
 unsigned char   mt9v03x_set_exposure_time_sccb  (unsigned short int light);
 unsigned char   mt9v03x_set_reg_sccb            (unsigned char addr, unsigned short int data);
 
+unsigned char   scc8660_set_config_sccb         (void *soft_iic_obj, short int buff[11][2]);
+unsigned char   scc8660_set_brightness_sccb     (unsigned short int brightness);
+unsigned char   scc8660_set_manual_wb_sccb      (unsigned short int manual_wb);
+unsigned char   scc8660_set_reg_sccb            (unsigned char reg, unsigned short int data);
 #endif
 
