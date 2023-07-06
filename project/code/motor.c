@@ -7,6 +7,7 @@
 #include "motor.h"
 
 int16 pulseCount_1, pulseCount_2;
+uint16 previous_pulseCount_1=0;
 int16 pulsesum_1, pulsesum_2;
 int16 motorPWML=0, motorPWMR=0;
 
@@ -43,6 +44,7 @@ void getPulseCount()
     pulseCount_2 = abs(encoder_get_count(ENCODER_2)/5);// 获取编码器计数
     encoder_clear_count(ENCODER_1);// 清空编码器计数
     encoder_clear_count(ENCODER_2);// 清空编码器计数
+    previous_pulseCount_1=pulseCount_1;
 
     pulseCount_1 = Speed_Low_Filter(pulseCount_1, speed_Record1);
     pulseCount_2 = Speed_Low_Filter(pulseCount_2, speed_Record2);
@@ -101,8 +103,8 @@ void PID_param_init()
   Lmotor_pid.err = 0.0f;
   Lmotor_pid.err_last = 0.0f;
   Lmotor_pid.err_next = 0.0f;
-  Lmotor_pid.Kp = 0.6f;
-  Lmotor_pid.Ki = 0.000038f;
+  Lmotor_pid.Kp = 0.25f;
+  Lmotor_pid.Ki = 0.001f;
   Lmotor_pid.Kd = 0.0f;
 
   Rmotor_pid.target_val=0.0f;
@@ -110,8 +112,8 @@ void PID_param_init()
   Rmotor_pid.err = 0.0f;
   Rmotor_pid.err_last = 0.0f;
   Rmotor_pid.err_next = 0.0f;
-  Rmotor_pid.Kp = 0.6f;
-  Rmotor_pid.Ki = 0.000038f;
+  Rmotor_pid.Kp = 0.25f;
+  Rmotor_pid.Ki = 0.001f;
   Rmotor_pid.Kd = 0.0f;
 }
 

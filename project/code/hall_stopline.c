@@ -7,6 +7,9 @@
 
 #include "hall_stopline.h"
 
+uint16 stopline_delay[2]={800,800};
+uint16 outgarage_delay[4]={1000,875,300,1500};
+
 void hallInit()
 {
     gpio_init(HALL_PIN, GPI, GPIO_HIGH, GPI_PULL_UP);
@@ -30,14 +33,14 @@ void out_garage()
                 ips200_show_string(0, 20, "running out...");
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
                 motor_control(1200,1200);
-                system_delay_ms(1000);
+                system_delay_ms(outgarage_delay[0]);
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-                system_delay_ms(875);
+                system_delay_ms(outgarage_delay[1]);
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
                 motor_control(0,0);
-                system_delay_ms(300);
+                system_delay_ms(outgarage_delay[2]);
                 motor_control(-1200,-1200);
-                system_delay_ms(1500);
+                system_delay_ms(outgarage_delay[3]);
                 motor_control(0,0);
                 out_garage_flag = true;
                 break;
@@ -51,9 +54,10 @@ void out_garage()
 void In_Garage()
 {
     motor_control(1000,1000);
-    system_delay_ms(800);
+    set_pid_target(NORMAL_PULSE);
+    system_delay_ms(stopline_delay[0]);
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-    system_delay_ms(800);
+    system_delay_ms(stopline_delay[1]);
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
     motor_control(0,0);
 

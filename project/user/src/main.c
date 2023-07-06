@@ -13,9 +13,12 @@
 void img_handler();
 
 // 避障相关
+#define OBSTACLE_DIS 600
 uint16 distance=0;
-uint16 obstacle_cnt=0;
+long obstacle_pulse_cnt=0;
 uint8 obstacle_phase=0;
+//uint16 obstacle_delay[7]={180,600,200,300,200,600,180};
+long obstacle_pulse[7]={1300,1700,1300,500,800,1700,800};
 
 // 过坡道相关
 uint16 slope_cnt=0;
@@ -39,7 +42,7 @@ int main (void)
     mt9v03x_init();
     ips200_init(IPS200_TYPE_PARALLEL8);
     ADC_init();
-//    tofInit();
+    tofInit();
 //    hallInit();
 
     timer_init(TIM_5, TIMER_MS);//计时器，查看程序运行时间
@@ -224,22 +227,22 @@ void elec_handler()
         motorPWMR += PID_realize(1, pulseCount_2);
 
         if(motorPWML>2000)
-            motorPWML = 2000;
+            motorPWML=2000;
         if(motorPWMR>2000)
             motorPWMR=2000;
         if(motorPWML<-2000)
-            motorPWML = -2000;
+            motorPWML=-2000;
         if(motorPWMR<-2000)
             motorPWMR=-2000;
 
-        if(0<=motorPWML&&motorPWML<600)
-            motorPWML = 600;
-        if(0<=motorPWMR&&motorPWMR<600)
-            motorPWMR=600;
-        if(-600<motorPWML&&motorPWML<=0)
-            motorPWML = -600;
-        if(-600<motorPWMR&&motorPWMR<=0)
-            motorPWMR=-600;
+//        if(0<=motorPWML&&motorPWML<600)
+//            motorPWML=600;
+//        if(0<=motorPWMR&&motorPWMR<600)
+//            motorPWMR=600;
+//        if(-600<motorPWML&&motorPWML<=0)
+//            motorPWML=-600;
+//        if(-600<motorPWMR&&motorPWMR<=0)
+//            motorPWMR=-600;
 
 
         motor_control(motorPWML, motorPWMR);
@@ -251,20 +254,20 @@ void elec_handler()
         // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
         distance = Get_Distance();
 //        printf("Dis: %d",distance);
-        if (distance <= 600)
+        if (distance <= OBSTACLE_DIS)
         {
 //            printf("Obstacle!");
             obstacle_flag=true;
-            obstacle_cnt=0;
+            obstacle_pulse_cnt=0;
         }
     }
-    //检测丢线
-    if(!front_diuxian_flag &&(elec_handler_cnt % Delay_cnt_calc(100)) == 0){
-        //todo 需要确定一个划分使正常使用时不误判
-        if(lostline_cnt>=10){
-            front_diuxian_flag=true;
-        }
-    }
+//    //检测丢线
+//    if(!front_diuxian_flag &&(elec_handler_cnt % Delay_cnt_calc(100)) == 0){
+//        //todo 需要确定一个划分使正常使用时不误判
+//        if(lostline_cnt>=100){
+//            front_diuxian_flag=true;
+//        }
+//    }
 
 #if MOTOR_DEBUG_STATUS
     if(elec_handler_cnt%Delay_cnt_calc(500)==2){
@@ -327,201 +330,201 @@ void elec_handler()
         judgement();
         CURRENT_STATUS = Status_Common;
 #if !MOTOR_DEBUG_STATUS&&!SERVO_DEBUG_STATUS
-    set_pid_target(15);
+    set_pid_target(NORMAL_PULSE);
 #endif
     }
     else if(left_circle_flag || right_circle_flag)
     {
         static uint16 cnt=0;
 #if CAR_TYPE
-        if(left_circle_flag)
+    if(left_circle_flag)
+    {
+        switch (circle_status)
         {
-            switch (circle_status)
-            {
-                case 1:// step1 避开第一个断口(正常巡线应该就行)
-                    CURRENT_STATUS = Status_Common;
+            case 1:// step1 避开第一个断口(正常巡线应该就行)
+                CURRENT_STATUS = Status_Common;
 
-                    if(adc_LL>circle_threshold)
-                    {
-                        circle_status++;
-                        cnt = 0;
-                        break;
-                    }
+                if(adc_LL>circle_threshold)
+                {
+                    circle_status++;
+                    cnt = 0;
+                    break;
+                }
 
-                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                    {
-                        circle_status = 0;
-                        cnt = 0;
-                        left_circle_flag = false;
-                        cross_cnt = 0;
-                        cross_flag = true;
-                    }
+                // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                {
+                    circle_status = 0;
+                    cnt = 0;
+                    left_circle_flag = false;
+                    cross_cnt = 0;
+                    cross_flag = true;
+                }
+                break;
+            case 2:
+                CURRENT_STATUS = Status_Common;
+                if(adc_LL<circle_threshold/2 && adc_RR<circle_threshold)
+                {
+                    circle_status++;
                     break;
-                case 2:
-                    CURRENT_STATUS = Status_Common;
-                    if(adc_LL<circle_threshold/2 && adc_RR<circle_threshold)
-                    {
-                        circle_status++;
-                        break;
-                    }
-                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                    {
-                        circle_status = 0;
-                        cnt = 0;
-                        left_circle_flag = false;
-                        cross_cnt = 0;
-                        cross_flag = true;
-                    }
+                }
+                // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                {
+                    circle_status = 0;
+                    cnt = 0;
+                    left_circle_flag = false;
+                    cross_cnt = 0;
+                    cross_flag = true;
+                }
+                break;
+            case 3:
+                CURRENT_STATUS = Status_Common;
+                if(adc_LL>circle_threshold-circle_threshold/10 && adc_RR<circle_threshold)
+                {
+                    circle_status++;
                     break;
-                case 3:
-                    CURRENT_STATUS = Status_Common;
-                    if(adc_LL>circle_threshold-circle_threshold/10 && adc_RR<circle_threshold)
-                    {
-                        circle_status++;
-                        break;
-                    }
-                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                    {
-                        circle_status = 0;
-                        cnt = 0;
-                        left_circle_flag = false;
-                        cross_cnt = 0;
-                        cross_flag = true;
-                    }
-                    break;
-                case 4:// step2 第二个断口入环，强行扭头入环
-                    CURRENT_STATUS = Status_Stop;
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(100));
-                    if(++cnt>Delay_cnt_calc(500))
-                    {
-                        circle_status++;
-                        cnt = 0;
-                    }
-                    break;
-                case 5:// step3 正常巡线
-                    CURRENT_STATUS = Status_Common;
-                    if(adc_RR>circle_threshold)
-                    {
-                        circle_status++;
-                    }
-                    break;
-                case 6:// step4 出环（正常巡线应该可以）
-                    CURRENT_STATUS = Status_Stop;
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(98));
-                    if(++cnt>Delay_cnt_calc(750))// && adc_LL<circle_threshold
-                    {
-                        circle_status++;
-                        cnt = 0;
-                    }
-                    break;
-                case 7:// step5 出环后
-                    CURRENT_STATUS = Status_Common;
-                    if(++cnt>Delay_cnt_calc(500))
-                    {
-                        cnt = 0;
-                        circle_status = 0;
-                        left_circle_flag = false;
-                    }
-                    break;
-            }
+                }
+                // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                {
+                    circle_status = 0;
+                    cnt = 0;
+                    left_circle_flag = false;
+                    cross_cnt = 0;
+                    cross_flag = true;
+                }
+                break;
+            case 4:// step2 第二个断口入环，强行扭头入环
+                CURRENT_STATUS = Status_Stop;
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(100));
+                if(++cnt>Delay_cnt_calc(500))
+                {
+                    circle_status++;
+                    cnt = 0;
+                }
+                break;
+            case 5:// step3 正常巡线
+                CURRENT_STATUS = Status_Common;
+                if(adc_RR>circle_threshold)
+                {
+                    circle_status++;
+                }
+                break;
+            case 6:// step4 出环（正常巡线应该可以）
+                CURRENT_STATUS = Status_Stop;
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(98));
+                if(++cnt>Delay_cnt_calc(750))// && adc_LL<circle_threshold
+                {
+                    circle_status++;
+                    cnt = 0;
+                }
+                break;
+            case 7:// step5 出环后
+                CURRENT_STATUS = Status_Common;
+                if(++cnt>Delay_cnt_calc(500))
+                {
+                    cnt = 0;
+                    circle_status = 0;
+                    left_circle_flag = false;
+                }
+                break;
         }
-        else
+    }
+    else
+    {
+        switch (circle_status)
         {
-            switch (circle_status)
-            {
-                case 1:// step1 避开第一个断口(正常巡线应该就行)
-                    CURRENT_STATUS = Status_Common;
+            case 1:// step1 避开第一个断口(正常巡线应该就行)
+                CURRENT_STATUS = Status_Common;
 
-                    if(adc_RR>circle_threshold)
-                    {
-                        circle_status++;
-                        cnt = 0;
-                        break;
-                    }
+                if(adc_RR>circle_threshold)
+                {
+                    circle_status++;
+                    cnt = 0;
+                    break;
+                }
 
-                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                    {
-                        circle_status = 0;
-                        cnt = 0;
-                        right_circle_flag = false;
-                        cross_cnt = 0;
-                        cross_flag = true;
-                    }
+                // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                {
+                    circle_status = 0;
+                    cnt = 0;
+                    right_circle_flag = false;
+                    cross_cnt = 0;
+                    cross_flag = true;
+                }
+                break;
+            case 2:
+                CURRENT_STATUS = Status_Common;
+                if(adc_RR<circle_threshold/2 && adc_LL<circle_threshold)
+                {
+                    circle_status++;
                     break;
-                case 2:
-                    CURRENT_STATUS = Status_Common;
-                    if(adc_RR<circle_threshold/2 && adc_LL<circle_threshold)
-                    {
-                        circle_status++;
-                        break;
-                    }
-                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                    {
-                        circle_status = 0;
-                        cnt = 0;
-                        right_circle_flag = false;
-                        cross_cnt = 0;
-                        cross_flag = true;
-                    }
+                }
+                // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                {
+                    circle_status = 0;
+                    cnt = 0;
+                    right_circle_flag = false;
+                    cross_cnt = 0;
+                    cross_flag = true;
+                }
+                break;
+            case 3:
+                CURRENT_STATUS = Status_Common;
+                if(adc_RR>circle_threshold-circle_threshold/10 && adc_LL<circle_threshold)
+                {
+                    circle_status++;
                     break;
-                case 3:
-                    CURRENT_STATUS = Status_Common;
-                    if(adc_RR>circle_threshold-circle_threshold/10 && adc_LL<circle_threshold)
-                    {
-                        circle_status++;
-                        break;
-                    }
-                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                    {
-                        circle_status = 0;
-                        cnt = 0;
-                        right_circle_flag = false;
-                        cross_cnt = 0;
-                        cross_flag = true;
-                    }
-                    break;
-                case 4:// step2 第二个断口入环，强行扭头入环
-                    CURRENT_STATUS = Status_Stop;
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
-                    if(++cnt>Delay_cnt_calc(750))
-                    {
-                        circle_status++;
-                        cnt = 0;
-                    }
-                    break;
-                case 5:// step3 正常巡线
-                    CURRENT_STATUS = Status_Common;
-                    if(adc_LL>circle_threshold)
-                    {
-                        circle_status++;
-                    }
-                    break;
-                case 6:// step4 出环（正常巡线应该可以）
-                    CURRENT_STATUS = Status_Stop;
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
-                    if(++cnt>Delay_cnt_calc(1000))
-                    {
-                        circle_status++;
-                        cnt = 0;
-                    }
-                    break;
-                case 7:// step5 出环后
-                    CURRENT_STATUS = Status_Common;
-                    if(++cnt>Delay_cnt_calc(500))
-                    {
-                        cnt = 0;
-                        circle_status = 0;
-                        right_circle_flag = false;
-                    }
-                    break;
-            }
+                }
+                // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
+                if(adc_LL>circle_threshold && adc_RR>circle_threshold)
+                {
+                    circle_status = 0;
+                    cnt = 0;
+                    right_circle_flag = false;
+                    cross_cnt = 0;
+                    cross_flag = true;
+                }
+                break;
+            case 4:// step2 第二个断口入环，强行扭头入环
+                CURRENT_STATUS = Status_Stop;
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
+                if(++cnt>Delay_cnt_calc(750))
+                {
+                    circle_status++;
+                    cnt = 0;
+                }
+                break;
+            case 5:// step3 正常巡线
+                CURRENT_STATUS = Status_Common;
+                if(adc_LL>circle_threshold)
+                {
+                    circle_status++;
+                }
+                break;
+            case 6:// step4 出环（正常巡线应该可以）
+                CURRENT_STATUS = Status_Stop;
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
+                if(++cnt>Delay_cnt_calc(1000))
+                {
+                    circle_status++;
+                    cnt = 0;
+                }
+                break;
+            case 7:// step5 出环后
+                CURRENT_STATUS = Status_Common;
+                if(++cnt>Delay_cnt_calc(500))
+                {
+                    cnt = 0;
+                    circle_status = 0;
+                    right_circle_flag = false;
+                }
+                break;
         }
+    }
 #else
         if(left_circle_flag)
         {
@@ -713,96 +716,108 @@ void elec_handler()
         }
 #endif
     }
-    else if(obstacle_flag && front_diuxian_flag)
+    else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag)
     {
-        set_pid_target(15);
+//        printf("%d\n",obstacle_phase);
         CURRENT_STATUS = Status_Stop;
         switch (obstacle_phase)
         {
             case 0:
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-                if(obstacle_cnt>=Delay_cnt_calc(180)){
-                    obstacle_cnt=0;
+                if(obstacle_pulse_cnt >= obstacle_pulse[0]){
+                    obstacle_pulse_cnt=0;
                     obstacle_phase=1;
                 }else{
-                    obstacle_cnt++;
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
                 break;
             case 1:
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_cnt>=Delay_cnt_calc(600)){
-                    obstacle_cnt=0;
+                if(obstacle_pulse_cnt >= obstacle_pulse[1]){
+                    obstacle_pulse_cnt=0;
                     obstacle_phase=2;
                 }else{
-                    obstacle_cnt++;
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
                 break;
             case 2:
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-                if(obstacle_cnt>=Delay_cnt_calc(200)){
-                    obstacle_cnt=0;
+                if(obstacle_pulse_cnt >= obstacle_pulse[2]){
+                    obstacle_pulse_cnt=0;
                     obstacle_phase=3;
                 }else{
-                    obstacle_cnt++;
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
                 break;
             case 3:
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_cnt>=Delay_cnt_calc(300)){
-                    obstacle_cnt=0;
+                if(obstacle_pulse_cnt >= obstacle_pulse[3]){
+                    obstacle_pulse_cnt=0;
                     obstacle_phase=4;
                 }else{
-                    obstacle_cnt++;
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
                 break;
             case 4:
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-                if(obstacle_cnt>=Delay_cnt_calc(200)){
-                    obstacle_cnt=0;
+                if(obstacle_pulse_cnt >= obstacle_pulse[4]){
+                    obstacle_pulse_cnt=0;
                     obstacle_phase=5;
                 }else{
-                    obstacle_cnt++;
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
                 break;
             case 5:
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_cnt>=Delay_cnt_calc(600)){
-                    obstacle_cnt=0;
+                if(obstacle_pulse_cnt >= obstacle_pulse[5]){
+                    obstacle_pulse_cnt=0;
                     obstacle_phase=6;
                 }else{
-                    obstacle_cnt++;
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
                 break;
             case 6:
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-                if(obstacle_cnt>=Delay_cnt_calc(180)){
-                    obstacle_cnt=0;
+                if(obstacle_pulse_cnt >= obstacle_pulse[6]){
+                    obstacle_pulse_cnt=0;
                     obstacle_phase=0;
                     obstacle_flag=false;
                     front_diuxian_flag=false;
                 }else{
-                    obstacle_cnt++;
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
                 break;
+            case 7:
+                obstacle_pulse_cnt=0;
+                obstacle_phase=0;
+                obstacle_flag=false;
+                front_diuxian_flag=false;
+                break;
+
         }
     }
-    else if(obstacle_flag && !front_diuxian_flag) {
-        if(slope_cnt==0) {
-            motor_control(1800,1800);
-        }
-        if(slope_cnt<Delay_cnt_calc(1000)) {
-            set_pid_target(35);
-            slope_cnt++;
-        }else {
-            slope_cnt=0;
-            obstacle_flag=false;
-            front_diuxian_flag=false;
-        }
-    }
+//    else if(obstacle_flag && !front_diuxian_flag) {
+//        if(slope_cnt==0) {
+//            motor_control(1800,1800);
+//        }
+//        if(slope_cnt<Delay_cnt_calc(1000)) {
+//            set_pid_target(FAST_PULSE);
+//            slope_cnt++;
+//        }else {
+//            slope_cnt=0;
+//            motor_control(1000,1000);
+//            set_pid_target(NORMAL_PULSE);
+//            obstacle_flag=false;
+//            front_diuxian_flag=false;
+//        }
+//    }
+#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
     else if(in_garage_flag)
     {
         In_Garage();
     }
+#endif
+
 
     //电池电量检测
 //    if(elec_handler_cnt%Delay_cnt_calc(5000)){

@@ -329,17 +329,17 @@ void TIM6_IRQHandler(void)
     {
        TIM_ClearITPendingBit(TIM6, TIM_IT_Update );
 
-       if(out_flag)
-       {
-           Read_ADC();
-           CURRENT_STATUS = Status_Stop;
-           motor_control(0, 0);
-       }
+//       if(out_flag)
+//       {
+//           Read_ADC();
+//           CURRENT_STATUS = Status_Stop;
+//           motor_control(0, 0);
+//       }
 //       else if(!judgeStopline())
 //       {
 //           while(1) motor_control(0, 0);
 //       }
-       else
+//       else
            elec_handler();
 
        servo_control(CURRENT_STATUS);

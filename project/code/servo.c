@@ -10,8 +10,8 @@
 float Angle=90;
 
 // µç´Å²ÎÊý
-float elec_Kp = 15;
-float elec_Kd = 0.9;
+float elec_Kp = 11.5;
+float elec_Kd = 23.5;
 float current_err_common, current_err_circle;
 float last_err_elec=0;
 

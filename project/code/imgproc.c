@@ -233,8 +233,8 @@ void findline()
     }
 
     // todo 异常很多行变宽,可能是拐弯处之类的赛道都在图像下方
-    if(lostline_cnt>Road_Width_Min+5)
-        lostline_cnt = 0;
+//    if(lostline_cnt>Road_Width_Min+5)
+//        lostline_cnt = 0;
 
     for(int row=ROW-2;row>SearchLineEndRow-1;row--)//只记录第一次丢线
     {
