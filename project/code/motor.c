@@ -10,6 +10,9 @@ int16 pulseCount_1, pulseCount_2;
 uint16 previous_pulseCount_1=0;
 int16 pulsesum_1, pulsesum_2;
 int16 motorPWML=0, motorPWMR=0;
+uint8 stuck_cnt=0;
+uint16 slope_state_CD=0;  //slope状态的CD，CD内不能再次触发slope状态
+
 
 void motor_init(void)
 {
@@ -45,6 +48,20 @@ void getPulseCount()
     encoder_clear_count(ENCODER_1);// 清空编码器计数
     encoder_clear_count(ENCODER_2);// 清空编码器计数
     previous_pulseCount_1=pulseCount_1;
+
+    //todo 坡道检测代码，
+    if(slope_state_CD<=0){
+        if(pulseCount_1<0.1*NORMAL_PULSE||pulseCount_2<0.1*NORMAL_PULSE){
+            stuck_cnt++;
+        }else{
+            stuck_cnt=0;
+        }
+        if(stuck_cnt>=50){
+            slope_flag=true;
+            stuck_cnt=0;
+//        printf("Slope!\n");
+        }
+    }
 
     pulseCount_1 = Speed_Low_Filter(pulseCount_1, speed_Record1);
     pulseCount_2 = Speed_Low_Filter(pulseCount_2, speed_Record2);

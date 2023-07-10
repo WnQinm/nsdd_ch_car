@@ -27,7 +27,7 @@
 #else
 #define NORMAL_PULSE 20
 #define SLOW_PULSE 15
-#define FAST_PULSE 35
+#define FAST_PULSE 40
 #endif
 
 #define NORMAL_DUTY 800
@@ -51,6 +51,7 @@ extern _pid Lmotor_pid, Rmotor_pid;
 extern int16 pulseCount_1, pulseCount_2;
 extern uint16 previous_pulseCount_1;
 extern int16 motorPWML, motorPWMR;
+extern uint16 slope_state_CD;
 void PID_param_init();
 void set_pid_target(float temp_val);
 float get_pid_target(void);

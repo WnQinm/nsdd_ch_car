@@ -9,7 +9,7 @@
 RaceStatus CURRENT_STATUS = Status_Common;
 
 uint8 out_garage_flag = false, in_garage_flag = false;
-uint8 left_circle_flag=false, right_circle_flag=false, cross_flag=false, obstacle_flag=false, front_diuxian_flag=false;
+uint8 left_circle_flag=false, right_circle_flag=false, cross_flag=false, obstacle_flag=false, front_diuxian_flag=false, slope_flag=false;
 uint8 circle_threshold=80, cross_threshold=80;
 uint8 circle_status=0;//环岛处理标志
 bool out_flag = false;

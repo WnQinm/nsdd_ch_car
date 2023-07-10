@@ -18,7 +18,15 @@ uint16 distance=0;
 long obstacle_pulse_cnt=0;
 uint8 obstacle_phase=0;
 //uint16 obstacle_delay[7]={180,600,200,300,200,600,180};
-long obstacle_pulse[7]={1300,1700,1300,500,800,1700,800};
+#if !CAR_TYPE&&!OBSTACLE_LEFTorRIGHT
+long obstacle_pulse[7]={1300,1700,800,500,800,1700,1300};
+#elif !CAR_TYPE&&OBSTACLE_LEFTorRIGHT
+long obstacle_pulse[7]={800,1700,1300,500,1300,1700,800};
+#elif CAR_TYPE && !OBSTACLE_LEFTorRIGHT
+long obstacle_pulse[7]={1500,1000,900,500,1200,1700,1500};
+#elif CAR_TYPE && OBSTACLE_LEFTorRIGHT
+long obstacle_pulse[7]={900,1000,1500,500,1500,1700,1200};
+#endif
 
 // 过坡道相关
 uint16 slope_cnt=0;
@@ -43,7 +51,7 @@ int main (void)
     ips200_init(IPS200_TYPE_PARALLEL8);
     ADC_init();
     tofInit();
-//    hallInit();
+    hallInit();
 
     timer_init(TIM_5, TIMER_MS);//计时器，查看程序运行时间
 
@@ -66,8 +74,12 @@ int main (void)
     PID_param_init();
     // 1m/s 54pulse/5ms
 
-#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+#if CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
     out_garage();
+    system_delay_ms(3000);
+    wait_for_launch();
+#elif !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+    wait_for_charge();
 #endif
 //
 //    motorPWML = 1200;
@@ -79,6 +91,7 @@ int main (void)
 
     while(1)
     {
+        printf("Alive!\n");
         // 此处编写需要循环执行的代码
 #if MOTOR_DEBUG_STATUS
         key_scanner();
@@ -131,9 +144,14 @@ int main (void)
 
 void ips200_show()
 {
-    ips200_show_gray_image(0,0,_img[0],RESULT_COL,RESULT_ROW,RESULT_COL,RESULT_ROW,0);
-//    camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
+#if PERSPECTIVE_DEBUG_STATUS
+    camera_send_image(DEBUG_UART_INDEX, (const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
 //    bluetooth_ch9141_send_image((const uint8 *)bin_image, MT9V03X_IMAGE_SIZE);
+    ips200_show_gray_image(0,0,_img[0],RESULT_COL,RESULT_ROW,RESULT_COL,RESULT_ROW,0);
+#else
+    ips200_show_gray_image(0,0,_img[0],RESULT_COL,RESULT_ROW,RESULT_COL,RESULT_ROW,0);
+#endif
+
 //    Draw_Side();
 
     ips200_show_string(110, 0, "Angle:");
@@ -141,8 +159,8 @@ void ips200_show()
 
 //    ips200_show_string(110,40,"Distance: ");
 //    ips200_show_int(150,40,distance,5);
-//    ips200_show_string(110,60,"Voltage: ");
-//    ips200_show_float(150,60,voltage_now,2,3);
+    ips200_show_string(110,60,"Voltage: ");
+    ips200_show_float(150,60,voltage_now,2,3);
 
     // motor pid
 #if MOTOR_DEBUG_STATUS
@@ -248,17 +266,27 @@ void elec_handler()
         motor_control(motorPWML, motorPWMR);
     }
 
-    // 红外避障
-    if (!obstacle_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
-    {
-        // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
-        distance = Get_Distance();
-//        printf("Dis: %d",distance);
-        if (distance <= OBSTACLE_DIS)
-        {
-//            printf("Obstacle!");
-            obstacle_flag=true;
-            obstacle_pulse_cnt=0;
+//    // 红外避障
+//    if (!obstacle_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
+//    {
+//        // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
+//        distance = Get_Distance();
+////        printf("Dis: %d",distance);
+//        if (distance <= OBSTACLE_DIS)
+//        {
+////            printf("Obstacle!");
+//            obstacle_flag=true;
+//            obstacle_pulse_cnt=0;
+//        }
+//    }
+    if(elec_handler_cnt % Delay_cnt_calc(10) == 0){
+//        in_garage_flag=isStopLine();
+        if(!judgeStopline()){   //用霍尔传感器检测停止线
+#if CAR_TYPE
+            Stop_At_Stopline();
+#else
+            In_Garage_with_Hall();
+#endif
         }
     }
 //    //检测丢线
@@ -267,6 +295,10 @@ void elec_handler()
 //        if(lostline_cnt>=100){
 //            front_diuxian_flag=true;
 //        }
+//    }
+//    //电池电量检测
+//    if(elec_handler_cnt%Delay_cnt_calc(5000)){
+//        Get_Battery_Voltage();
 //    }
 
 #if MOTOR_DEBUG_STATUS
@@ -305,6 +337,7 @@ void elec_handler()
         uint16 data_len = bluetooth_ch9141_read_buff(buff, 64);                 // 查看是否有消息 默认缓冲区是 BLUETOOTH_CH9141_BUFFER_SIZE 总共 64 字节
         if(data_len != 0)                                                       // 收到了消息 读取函数会返回实际读取到的数据个数
         {
+            bluetooth_ch9141_send_buff(buff,data_len);
             bool isModified=true;
             //输入示例：p0.01
             switch (buff[0]) {
@@ -720,6 +753,7 @@ void elec_handler()
     {
 //        printf("%d\n",obstacle_phase);
         CURRENT_STATUS = Status_Stop;
+#if OBSTACLE_LEFTorRIGHT
         switch (obstacle_phase)
         {
             case 0:
@@ -781,48 +815,141 @@ void elec_handler()
                 if(obstacle_pulse_cnt >= obstacle_pulse[6]){
                     obstacle_pulse_cnt=0;
                     obstacle_phase=0;
+                    CURRENT_STATUS = Status_Common;
                     obstacle_flag=false;
                     front_diuxian_flag=false;
                 }else{
                     obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
                 break;
+            //用于中途跳出避障状态
             case 7:
                 obstacle_pulse_cnt=0;
                 obstacle_phase=0;
+                CURRENT_STATUS = Status_Common;
                 obstacle_flag=false;
                 front_diuxian_flag=false;
                 break;
 
         }
+#else
+        switch (obstacle_phase)
+        {
+            case 0:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                if(obstacle_pulse_cnt >= obstacle_pulse[0]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=1;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 1:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_pulse_cnt >= obstacle_pulse[1]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=2;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 2:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+                if(obstacle_pulse_cnt >= obstacle_pulse[2]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=3;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 3:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_pulse_cnt >= obstacle_pulse[3]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=4;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 4:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+                if(obstacle_pulse_cnt >= obstacle_pulse[4]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=5;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 5:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_pulse_cnt >= obstacle_pulse[5]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=6;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 6:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                if(obstacle_pulse_cnt >= obstacle_pulse[6]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=0;
+                    CURRENT_STATUS = Status_Common;
+                    obstacle_flag=false;
+                    front_diuxian_flag=false;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+                //用于中途跳出避障状态
+            case 7:
+                obstacle_pulse_cnt=0;
+                obstacle_phase=0;
+                CURRENT_STATUS = Status_Common;
+                obstacle_flag=false;
+                front_diuxian_flag=false;
+                break;
+
+        }
+#endif
     }
-//    else if(obstacle_flag && !front_diuxian_flag) {
-//        if(slope_cnt==0) {
-//            motor_control(1800,1800);
+//    if(slope_flag) {
+////        if(slope_cnt==0) {
+////            motor_control(2500,2500);
+////        }
+////        if(slope_cnt<Delay_cnt_calc(1000)) {
+////            motor_control(2500,2500);
+////            slope_cnt++;
+////        }else {
+////            slope_cnt=0;
+////            motor_control(1000,1000);
+////            set_pid_target(NORMAL_PULSE);
+////            slope_flag=false;
+////        }
+//
+//        for(uint16 i=0;i<1000;i++){
+//            getPulseCount();
+//            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+//            motor_control(2500,2500);
+//            system_delay_ms(1);
 //        }
-//        if(slope_cnt<Delay_cnt_calc(1000)) {
-//            set_pid_target(FAST_PULSE);
-//            slope_cnt++;
-//        }else {
-//            slope_cnt=0;
-//            motor_control(1000,1000);
-//            set_pid_target(NORMAL_PULSE);
-//            obstacle_flag=false;
-//            front_diuxian_flag=false;
-//        }
+//        slope_cnt=0;
+//        set_pid_target(NORMAL_PULSE);
+//        slope_flag=false;
+//        slope_state_CD=5000;
 //    }
-#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+#if !MOTOR_DEBUG_STATUS || !SERVO_DEBUG_STATUS
     else if(in_garage_flag)
     {
-        In_Garage();
+#if !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+//        In_Garage();
+#elif CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+        Stop_At_Stopline();
+#endif
     }
 #endif
 
 
-    //电池电量检测
-//    if(elec_handler_cnt%Delay_cnt_calc(5000)){
-//        Get_Battery_Voltage();
-//    }
 
     if (elec_handler_cnt == Delay_cnt_calc(5000)) {
         elec_handler_cnt = 0;

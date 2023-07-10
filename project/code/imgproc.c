@@ -118,7 +118,7 @@ void ImagePerspective_Init(void)
 #if CAR_TYPE
     double change_un_Mat[3][3] ={{-1.249200,1.007972,-26.999219},{-0.098009,0.294157,-41.195868},{-0.001661,0.011368,-0.857782}};
 #else
-    double change_un_Mat[3][3] ={{-1.249200,1.007972,-26.999219},{-0.098009,0.294157,-41.195868},{-0.001661,0.011368,-0.857782}};
+    double change_un_Mat[3][3] ={{0.759635,-0.599011,16.503242},{-0.017395,0.144478,8.770975},{-0.000164,-0.006331,0.544402}};
 #endif
 
     for (int i = 0; i < RESULT_COL ;i++)
@@ -316,8 +316,8 @@ bool isStopLine()
         }
     }
 //    ips200_show_int(0,0,flipCnt,3);
-    if(flipCnt>=5){
-        return true;
+    if(flipCnt>=12){
+        return false;
     }else{
         return false;
     }
@@ -329,6 +329,7 @@ void ImageProcess()
     for(uint8 num=0;num<MT9V03X_H;num++)
        memcpy(bin_image[num],mt9v03x_image[num],MT9V03X_W);
 
+#if !PERSPECTIVE_DEBUG_STATUS
     // +-10ms
     otsu_thereshold = otsu(bin_image[0], MT9V03X_W, MT9V03X_H);
     // 4-5ms
@@ -339,4 +340,5 @@ void ImageProcess()
        memcpy(_img[num],bin_image[num],RESULT_COL);
 
     findline();
+#endif
 }

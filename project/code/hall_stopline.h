@@ -23,5 +23,9 @@ void hallInit();
 bool judgeStopline();
 void out_garage();
 void In_Garage();
+void wait_for_charge();
+void Stop_At_Stopline();
+void In_Garage_with_Hall();
+void wait_for_launch();
 
 #endif /* HALL_STOPLINE_H_ */

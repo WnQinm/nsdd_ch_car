@@ -33,7 +33,7 @@ void judgement();
 extern RaceStatus CURRENT_STATUS;
 
 extern uint8 out_garage_flag, in_garage_flag;
-extern uint8 left_circle_flag, right_circle_flag, cross_flag, obstacle_flag, front_diuxian_flag;
+extern uint8 left_circle_flag, right_circle_flag, cross_flag, obstacle_flag, front_diuxian_flag, slope_flag;
 extern uint8 circle_threshold, cross_threshold;
 extern uint8 circle_status;
 extern uint16 cross_cnt;
