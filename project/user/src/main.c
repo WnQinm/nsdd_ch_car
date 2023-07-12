@@ -17,7 +17,10 @@ uint16 distance=0;
 uint16 obstacle_cnt=0;
 uint8 obstacle_phase=0;
 
+// 环岛用
 float tmp_angle=90;
+
+uint16 slope_cnt=0;
 
 // 调试相关
 #if MOTOR_DEBUG_STATUS
@@ -64,12 +67,12 @@ int main (void)
     // 1m/s 54pulse/5ms
 
 #if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-    out_garage();
+    set_pid_target(15);
+//    out_garage();
 #endif
 //
 //    motorPWML = 1200;
 //    motorPWMR = 1200;
-//    set_pid_target(15);
 
     Main_pit_init();
 
@@ -174,8 +177,9 @@ void ips200_show()
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
-    ips200_show_int(80, 170, adc_R, 5);
-    ips200_show_int(120, 170, adc_RR, 5);//L
+    ips200_show_int(80, 170, adc_M, 5);
+    ips200_show_int(120, 170, adc_R, 5);
+    ips200_show_int(160, 170, adc_RR, 5);
 
     // camera data
     ips200_show_string(0, 190, "corner point:");
@@ -220,29 +224,29 @@ void elec_handler()
         motorPWML += PID_realize(0, pulseCount_1);
         motorPWMR += PID_realize(1, pulseCount_2);
 
-        if(motorPWML>2000)
-            motorPWML = 2000;
-        if(motorPWMR>2000)
-            motorPWMR=2000;
+        if(motorPWML>3000)
+            motorPWML = 3000;
+        if(motorPWMR>3000)
+            motorPWMR=3000;
 
         motor_control(motorPWML, motorPWMR);
     }
 
     // 红外避障
-    if (!obstacle_flag && !slope_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
-    {
-        // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
-        distance = Get_Distance();
-        if (distance <= 600 && lostline_cnt>Road_Width_Min)
-        {
-            obstacle_flag=true;
-            obstacle_cnt=0;
-        }
-        else if(distance <= 600 && lostline_cnt<=Road_Width_Min)
-        {
-            slope_flag = true;
-        }
-    }
+//    if (!obstacle_flag && !slope_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
+//    {
+//        // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
+//        distance = Get_Distance();
+//        if (distance <= 600 && lostline_cnt>Road_Width_Min)
+//        {
+//            obstacle_flag=true;
+//            obstacle_cnt=0;
+//        }
+//        else if(distance <= 600 && lostline_cnt<=Road_Width_Min)
+//        {
+//            slope_flag = true;
+//        }
+//    }
 
 //#if MOTOR_DEBUG_STATUS
 //    if(elec_handler_cnt%Delay_cnt_calc(500)==2){
@@ -301,9 +305,6 @@ void elec_handler()
     {
         judgement();
         CURRENT_STATUS = Status_Common;
-#if !MOTOR_DEBUG_STATUS
-    set_pid_target(15);
-#endif
     }
     else if(left_circle_flag || right_circle_flag)
     {
@@ -767,6 +768,21 @@ void elec_handler()
     else if(in_garage_flag)
     {
         In_Garage();
+    }
+    else if(slope_flag)
+    {
+        CURRENT_STATUS=Status_Common;
+        if(slope_cnt<Delay_cnt_calc(500))
+        {
+            set_pid_target(50);
+            slope_cnt++;
+        }
+        else
+        {
+           slope_cnt=0;
+           slope_flag=false;
+           set_pid_target(15);
+        }
     }
 
     //电池电量检测

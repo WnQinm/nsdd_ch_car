@@ -6,14 +6,10 @@
  */
 #include "Read_ADC.h"
 
-#if CAR_TYPE
 float ADC_MAX = 235,ADC_MIN = 0;
-#else
-float ADC_MAX = 235,ADC_MIN = 0;
-#endif
 float voltage_now=0;
-uint16 adc_LL,adc_L,adc_R,adc_RR;//电感采集值     | - - |
-kalman_param kfp0, kfp1, kfp2, kfp3;
+uint16 adc_LL,adc_L,adc_M,adc_R,adc_RR;//电感采集值     | - - |
+kalman_param kfp0, kfp1, kfp2, kfp3, kfp4;
 
 void kfp_init_son(kalman_param *kfp)
 {
@@ -33,15 +29,17 @@ void kfp_init(void)
     kfp_init_son(&kfp1);
     kfp_init_son(&kfp2);
     kfp_init_son(&kfp3);
+    kfp_init_son(&kfp4);
 }
 
 void ADC_init()
 {
 #if CAR_TYPE
-    adc_init(ADC1_IN7_A7, ADC_8BIT);
-    adc_init(ADC1_IN9_B1,ADC_8BIT);
-    adc_init(ADC1_IN10_C0,ADC_8BIT);
-    adc_init(ADC1_IN11_C1, ADC_8BIT);
+    adc_init(ADC1_IN12_C2, ADC_8BIT);
+    adc_init(ADC1_IN13_C3,ADC_8BIT);
+    adc_init(ADC1_IN14_C4,ADC_8BIT);
+    adc_init(ADC1_IN15_C5, ADC_8BIT);
+    adc_init(ADC1_IN1_A1, ADC_8BIT);
 #else
     adc_init(ADC1_IN12_C2, ADC_8BIT);
     adc_init(ADC1_IN13_C3,ADC_8BIT);
@@ -77,10 +75,11 @@ uint16 Normal(uint16 adc_val)
 void Read_ADC()
 {
 #if CAR_TYPE
-    adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN7_A7, 10));//左竖
-    adc_L=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN9_B1, 10));//右竖
-    adc_R=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN10_C0, 10));//左横
-    adc_RR=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN11_C1, 10));//右横
+    adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN12_C2, 10));
+    adc_L=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN13_C3, 10));
+    adc_M=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN14_C4, 10));
+    adc_R=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN15_C5, 10));
+    adc_RR=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN1_A1, 10));
 #else
     adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN12_C2, 10));//左竖
     adc_L=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN13_C3, 10));//右竖

@@ -236,6 +236,17 @@ void findline()
     if(lostline_cnt>Road_Width_Min+5)
         lostline_cnt = 0;
 
+    if(!slope_flag)
+    {
+        for(int row=ROW/4;row>1;row--)
+        {
+            if(row==2)
+                slope_flag=true;
+            if(leftline[row]<COL/2-Road_Width_Min || rightline[row]>COL/2+Road_Width_Min || road_width[row]<=Road_Width_Min+5)
+                break;
+        }
+    }
+
     for(int row=ROW-2;row>SearchLineEndRow-1;row--)//只记录第一次丢线
     {
         if(road_width[row]>Road_Width_Min+5)
