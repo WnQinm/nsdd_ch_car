@@ -20,6 +20,16 @@
 #define MOTOR2_A   D15                      // 定义2电机正反转引脚
 #define MOTOR2_B   TIM4_PWM_MAP1_CH3_D14         // 定义2电机PWM引脚
 
+#if CAR_TYPE
+#define NORMAL_PULSE 23
+#define SLOW_PULSE 15
+#define FAST_PULSE 35
+#else
+#define NORMAL_PULSE 20
+#define SLOW_PULSE 15
+#define FAST_PULSE 40
+#endif
+
 #define NORMAL_DUTY 800
 
 /*pid*/
@@ -39,8 +49,8 @@ void getPulseCount();
 
 extern _pid Lmotor_pid, Rmotor_pid;
 extern int16 pulseCount_1, pulseCount_2;
+extern uint16 previous_pulseCount_1;
 extern int16 motorPWML, motorPWMR;
-
 void PID_param_init();
 void set_pid_target(float temp_val);
 float get_pid_target(void);

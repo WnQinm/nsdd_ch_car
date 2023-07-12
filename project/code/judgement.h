@@ -1,19 +1,19 @@
 /*
  * judgement.h
  *
- *  Created on: 2023Äê6ÔÂ18ÈÕ
- *      Author: ÇåÃÎ
+ *  Created on: 2023ï¿½ï¿½6ï¿½ï¿½18ï¿½ï¿½
+ *      Author: ï¿½ï¿½ï¿½ï¿½
  */
 
 #ifndef JUDGEMENT_H_
 #define JUDGEMENT_H_
 
-// todo ºóÃæËÙ¶È¸ßÁËÒªµ÷Ğ¡ÕâÀï£¬·ñÔò»áÑÓ³ÙÅĞ¶ÏÊ®×Ö
-// ¹ıÊ®×ÖµÄÊ±¼ä£¬·ÀÖ¹ÔÚ¹ıÊ®×ÖÆÚ¼äÖØ¸´ÅĞ¶ÏÊ®×Ö
+// todo ï¿½ï¿½ï¿½ï¿½ï¿½Ù¶È¸ï¿½ï¿½ï¿½Òªï¿½ï¿½Ğ¡ï¿½ï¿½ï¿½ï£¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ó³ï¿½ï¿½Ğ¶ï¿½Ê®ï¿½ï¿½
+// ï¿½ï¿½Ê®ï¿½Öµï¿½Ê±ï¿½ä£¬ï¿½ï¿½Ö¹ï¿½Ú¹ï¿½Ê®ï¿½ï¿½ï¿½Ú¼ï¿½ï¿½Ø¸ï¿½ï¿½Ğ¶ï¿½Ê®ï¿½ï¿½
 #define CROSS_DELAY_TIME 1500
 
-// µÀÂ·×´Ì¬Ã¶¾Ù
-// »òĞí¿ÉÒÔ°ÉÑ­ÓÒÏß·ÅÕâÀï
+// ï¿½ï¿½Â·×´Ì¬Ã¶ï¿½ï¿½
+// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ô°ï¿½Ñ­ï¿½ï¿½ï¿½ß·ï¿½ï¿½ï¿½ï¿½ï¿½
 typedef enum
 {
     Status_Stop   = 0,
@@ -33,11 +33,10 @@ void judgement();
 extern RaceStatus CURRENT_STATUS;
 
 extern uint8 out_garage_flag, in_garage_flag;
-extern uint8 left_circle_flag, right_circle_flag, cross_flag, obstacle_flag;
+extern uint8 left_circle_flag, right_circle_flag, cross_flag, obstacle_flag, front_diuxian_flag, slope_flag;
 extern uint8 circle_threshold, cross_threshold;
 extern uint8 circle_status;
 extern uint16 cross_cnt;
 extern bool out_flag;
-extern bool slope_flag;
 
 #endif /* JUDGEMENT_H_ */

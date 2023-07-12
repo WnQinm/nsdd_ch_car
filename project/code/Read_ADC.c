@@ -48,8 +48,7 @@ void ADC_init()
 #endif
     kfp_init();
 
-    // ADC get Battery init
-//    adc_init(ADC2_IN9_B1, ADC_12BIT);                                          // 建议电磁传感器用 ADC1 电池检测用 ADC2
+
 }
 
 // 卡尔曼滤波
@@ -102,11 +101,11 @@ void Get_Battery_Voltage(){
     uint16 voltage_adc = adc_convert(ADC2_IN9_B1);
     voltage_now = 11.0f * 3.3f * ((float)voltage_adc / 4095);
 //    printf("Voltage: %2.2f\n", voltage_now);
-    if(voltage_now<=11.0f){
-        ips200_clear();
-        motor_control(0,0);
-        ips200_show_string(1,1,"BATTERY VERY LOW! ");
-        ips200_show_string(1,21,"PLEASE CHARGE NOW! ");
-        while (1){}
-    }
+//    if(voltage_now<=11.0f){
+//        ips200_clear();
+//        motor_control(0,0);
+//        ips200_show_string(1,1,"BATTERY VERY LOW! ");
+//        ips200_show_string(1,21,"PLEASE CHARGE NOW! ");
+//        while (1){}
+//    }
 }
