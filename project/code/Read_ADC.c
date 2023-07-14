@@ -45,10 +45,15 @@ void ADC_init()
     adc_init(ADC1_IN13_C3,ADC_8BIT);
     adc_init(ADC1_IN14_C4,ADC_8BIT);
     adc_init(ADC1_IN15_C5, ADC_8BIT);
+    adc_init(ADC1_IN1_A1, ADC_8BIT);
 #endif
     kfp_init();
 
 
+}
+
+void ADC_Battery_init(){
+    adc_init(ADC2_IN9_B1, ADC_12BIT);
 }
 
 // ¿¨¶ûÂüÂË²¨
@@ -99,7 +104,7 @@ void Read_ADC()
         out_flag = false;
 }
 
-void Get_Battery_Voltage(){
+float Get_Battery_Voltage(){
     uint16 voltage_adc = adc_convert(ADC2_IN9_B1);
     voltage_now = 11.0f * 3.3f * ((float)voltage_adc / 4095);
 //    printf("Voltage: %2.2f\n", voltage_now);
@@ -110,4 +115,5 @@ void Get_Battery_Voltage(){
 //        ips200_show_string(1,21,"PLEASE CHARGE NOW! ");
 //        while (1){}
 //    }
+    return voltage_now;
 }

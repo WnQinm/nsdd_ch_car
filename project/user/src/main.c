@@ -70,8 +70,6 @@ int main (void)
     motor_init();
     mt9v03x_init();
     ips200_init(IPS200_TYPE_PARALLEL8);
-
-    ADC_init();
 //    tofInit();
     hallInit();
 
@@ -101,12 +99,15 @@ int main (void)
     system_delay_ms(3000);
     wait_for_launch();
 #elif !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+    ADC_Battery_init();
     wait_for_charge();
+    ADC_DeInit(ADC2);
 #endif
 //
 //    motorPWML = 1200;
 //    motorPWMR = 1200;
 
+    ADC_init();
     Main_pit_init();
     motor_control(800,800);
     set_pid_target(NORMAL_PULSE);
@@ -296,7 +297,7 @@ void elec_handler()
 //        }
 //    }
     if(elec_handler_cnt % Delay_cnt_calc(10) == 0){
-//        in_garage_flag=isStopLine();
+        in_garage_flag=isStopLine();
         if(!judgeStopline()){   //ÓÃ»ô¶û´«¸ÐÆ÷¼ì²âÍ£Ö¹Ïß
 #if CAR_TYPE
             Stop_At_Stopline();
@@ -1053,7 +1054,7 @@ void elec_handler()
         }
 #endif
     }
-    else if(in_garage_flag && startup<=0)
+    else if(in_garage_flag)
     {
 #if !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
         In_Garage();

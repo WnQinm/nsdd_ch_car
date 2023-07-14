@@ -28,9 +28,29 @@ void wait_for_charge(){
     //通过撞击的方式发送启动信号
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
     ips200_show_string(0, 0, "wait for charge to start...");
-
-    //todo 电量检测，充满电后再撞击
-    system_delay_ms(5000);
+//    uint8 cnt=0;
+    bool key=false;
+    while(voltage_now<=12 && !key){
+        float voltage=Get_Battery_Voltage();
+        ips200_show_string(0,20,"Voltage");
+        ips200_show_float(70,20,voltage,3,3);
+//        if(cnt>=200){
+//            break;
+//        }else{
+//            cnt++;
+//            system_delay_ms(10);
+//        }
+        key_scanner();
+        switch(key_get_state(KEY_1))
+        {
+            case KEY_SHORT_PRESS:
+            case KEY_LONG_PRESS:
+                key=true;
+                break;
+            default:
+                break;
+        }
+    }
 
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
     ips200_show_string(0, 20, "running out...");

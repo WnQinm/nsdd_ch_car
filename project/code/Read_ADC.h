@@ -16,7 +16,8 @@
 
 void ADC_init();
 void Read_ADC();
-void Get_Battery_Voltage();
+float Get_Battery_Voltage();
+void ADC_Battery_init();
 
 typedef struct{
     float LastP;
