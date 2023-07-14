@@ -10,8 +10,13 @@
 float Angle=90;
 
 // 电磁参数
+#if CAR_TYPE
 float elec_Kp = 11.5;//15;
-float elec_Kd = 30;//25;//23.5;//23;//22;//20.5;//19.5;
+float elec_Kd = 5;//25;//23.5;//23;//22;//20.5;//19.5;
+#else
+float elec_Kp = 9;//15;
+float elec_Kd = 7;//25;//23.5;//23;//22;//20.5;//19.5;
+#endif
 float current_err_common, current_err_circle;
 float last_err_elec=0;
 
@@ -19,7 +24,7 @@ float last_err_elec=0;
 #define  camera_Kp 30//30
 #define  camera_Kd 0
 int midline_f, midline_ff, midline_fff;
-//通过aimline及其下面3行计算偏差
+//通过aimline及其下面3行计算偏差+
 uint8 aimLine=default_aimline;
 float current_err_Lcamera, current_err_Rcamera, last_err_camera;
 

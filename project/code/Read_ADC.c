@@ -76,18 +76,20 @@ void Read_ADC()
 #if CAR_TYPE
     adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN12_C2, 10));
     adc_L=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN13_C3, 10));
-    adc_M=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN14_C4, 10));
-    adc_R=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN15_C5, 10));
-    adc_RR=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN1_A1, 10));
+    adc_M=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN14_C4, 10));
+    adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN15_C5, 10));
+    adc_RR=kalman_filter(&kfp4, adc_mean_filter_convert(ADC1_IN1_A1, 10));
 #else
     adc_LL=kalman_filter(&kfp0, adc_mean_filter_convert(ADC1_IN12_C2, 10));//×óÊú
     adc_L=kalman_filter(&kfp1, adc_mean_filter_convert(ADC1_IN13_C3, 10));//ÓÒÊú
-    adc_R=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN14_C4, 10));//×óºá
-    adc_RR=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN15_C5, 10));//ÓÒºá
+    adc_M=kalman_filter(&kfp2, adc_mean_filter_convert(ADC1_IN14_C4, 10));//ÖÐÊú
+    adc_R=kalman_filter(&kfp3, adc_mean_filter_convert(ADC1_IN15_C5, 10));//×óºá
+    adc_RR=kalman_filter(&kfp4, adc_mean_filter_convert(ADC1_IN1_A1, 10));//ÓÒºá
 #endif
 
     adc_LL = Normal(adc_LL);
     adc_L = Normal(adc_L);
+    adc_M = Normal(adc_M);
     adc_R = Normal(adc_R);
     adc_RR = Normal(adc_RR);
 

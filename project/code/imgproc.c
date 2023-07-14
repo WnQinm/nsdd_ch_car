@@ -236,6 +236,7 @@ void findline()
 //    if(lostline_cnt>Road_Width_Min+5)
 //        lostline_cnt = 0;
 
+#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
     if(!slope_flag)
     {
         for(int row=ROW/4;row>1;row--)
@@ -246,6 +247,7 @@ void findline()
                 break;
         }
     }
+#endif
 
     for(int row=ROW-2;row>SearchLineEndRow-1;row--)//只记录第一次丢线
     {

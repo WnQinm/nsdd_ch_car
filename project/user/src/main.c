@@ -18,21 +18,39 @@ uint16 distance=0;
 long obstacle_pulse_cnt=0;
 uint8 obstacle_phase=0;
 //uint16 obstacle_delay[7]={180,600,200,300,200,600,180};
-#if !CAR_TYPE&&!OBSTACLE_LEFTorRIGHT
-long obstacle_pulse[7]={1300,1700,800,500,800,1700,1300};
-#elif !CAR_TYPE&&OBSTACLE_LEFTorRIGHT
-long obstacle_pulse[7]={800,1700,1300,500,1300,1700,800};
-#elif CAR_TYPE && !OBSTACLE_LEFTorRIGHT
-long obstacle_pulse[7]={1500,1000,900,500,1200,1700,1500};
-#elif CAR_TYPE && OBSTACLE_LEFTorRIGHT
-long obstacle_pulse[7]={900,1000,1500,500,1500,1700,1200};
+#if OBSTACLE_AT_STRAIGHT
+    #if !CAR_TYPE&&!OBSTACLE_LEFTorRIGHT
+    long obstacle_pulse[7]={1300,1700,800,1000,800,1700,1100};
+    #elif !CAR_TYPE&&OBSTACLE_LEFTorRIGHT
+    long obstacle_pulse[7]={800,1700,1300,1000,1100,1700,800};
+    #elif CAR_TYPE && !OBSTACLE_LEFTorRIGHT
+    long obstacle_pulse[7]={1500,1000,900,500,1200,1700,1500};
+    #elif CAR_TYPE && OBSTACLE_LEFTorRIGHT
+    long obstacle_pulse[7]={900,1000,1500,500,1500,1700,1200};
+    #endif
+#else
+    #if !CAR_TYPE&&!OBSTACLE_LEFTorRIGHT
+    long obstacle_pulse[3]={1500,10000,1500};
+    #elif !CAR_TYPE&&OBSTACLE_LEFTorRIGHT
+    long obstacle_pulse[3]={1000,6000,1000};
+    #elif CAR_TYPE && !OBSTACLE_LEFTorRIGHT
+    long obstacle_pulse[3]={1500,10000,1500};
+    #elif CAR_TYPE && OBSTACLE_LEFTorRIGHT
+    long obstacle_pulse[3]={1500,10000,1500};
+    #endif
 #endif
+
+
 
 // 环岛用
 float tmp_angle=90;
 
 // 过坡道相关
 uint16 slope_cnt=0;
+uint8 slope_phase=0;
+
+//启动保护，避免出库后再入库
+uint16 startup=3000;
 
 // 调试相关
 #if MOTOR_DEBUG_STATUS
@@ -54,7 +72,7 @@ int main (void)
     ips200_init(IPS200_TYPE_PARALLEL8);
 
     ADC_init();
-    tofInit();
+//    tofInit();
     hallInit();
 
     timer_init(TIM_5, TIMER_MS);//计时器，查看程序运行时间
@@ -90,6 +108,8 @@ int main (void)
 //    motorPWMR = 1200;
 
     Main_pit_init();
+    motor_control(800,800);
+    set_pid_target(NORMAL_PULSE);
 
 
     while(1)
@@ -162,6 +182,12 @@ void ips200_show()
 //    ips200_show_int(150,40,distance,5);
     ips200_show_string(110,60,"Voltage: ");
     ips200_show_float(150,60,voltage_now,2,3);
+    ips200_show_string(0, 150, "elec ADC value:");
+    ips200_show_int(0, 170, adc_LL, 5);
+    ips200_show_int(40, 170, adc_L, 5);
+    ips200_show_int(80, 170, adc_M, 5);
+    ips200_show_int(120, 170, adc_R, 5);
+    ips200_show_int(160, 170, adc_RR, 5);
 
     // motor pid
 #if MOTOR_DEBUG_STATUS
@@ -196,12 +222,7 @@ void ips200_show()
     ips200_show_int(150, 70, pulseCount_2, 5);
     ips200_show_string(0, 90, "target pulse:");
     ips200_show_int(100, 90, get_pid_target(), 3);
-    ips200_show_string(0, 150, "elec ADC value:");
-    ips200_show_int(0, 170, adc_LL, 5);
-    ips200_show_int(40, 170, adc_L, 5);
-    ips200_show_int(80, 170, adc_M, 5);
-    ips200_show_int(120, 170, adc_R, 5);
-    ips200_show_int(160, 170, adc_RR, 5);
+
 
     // camera data
     ips200_show_string(0, 190, "corner point:");
@@ -258,12 +279,15 @@ void elec_handler()
         motor_control(motorPWML, motorPWMR);
     }
 
-//    // 红外避障
-//    if (!obstacle_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
+#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+//    //红外避障
+//    if (!slope_flag && !obstacle_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
 //    {
 //        // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
 //        distance = Get_Distance();
 ////        printf("Dis: %d",distance);
+//        ips200_show_string(0,0,"distance: ");
+//        ips200_show_int(50,0,distance,5);
 //        if (distance <= OBSTACLE_DIS)
 //        {
 ////            printf("Obstacle!");
@@ -281,17 +305,14 @@ void elec_handler()
 #endif
         }
     }
-//    //检测丢线
-//    if(!front_diuxian_flag &&(elec_handler_cnt % Delay_cnt_calc(100)) == 0){
-//        //todo 需要确定一个划分使正常使用时不误判
-//        if(lostline_cnt>=100){
-//            front_diuxian_flag=true;
-//        }
-//    }
+#endif
 //    //电池电量检测
 //    if(elec_handler_cnt%Delay_cnt_calc(5000)){
 //        Get_Battery_Voltage();
 //    }
+    if(startup>0) {
+        startup--;
+    }
 
 #if MOTOR_DEBUG_STATUS
     if(elec_handler_cnt%Delay_cnt_calc(500)==2){
@@ -745,11 +766,50 @@ void elec_handler()
         }
 #endif
     }
+    else if(slope_flag)
+    {
+        CURRENT_STATUS=Status_Common;
+        obstacle_flag=false;
+        ips200_show_string(0,200,"Slope!");
+        switch (slope_phase) {
+            case 0:
+                if(slope_cnt<Delay_cnt_calc(500)){
+                    motor_control(3500,3500);
+                    set_pid_target(FAST_PULSE);
+                    slope_cnt++;
+                }else{
+                    slope_cnt=0;
+                    slope_phase=1;
+                }
+                break;
+            case 1:
+                if(slope_cnt<Delay_cnt_calc(200)){
+                    motor_control(0,0);
+//                    set_pid_target(SLOW_PULSE);
+                    slope_cnt++;
+                }else {
+                    slope_cnt=0;
+                    slope_phase=2;
+                }
+                break;
+            case 2:
+                if(slope_cnt<Delay_cnt_calc(1000)){
+                    set_pid_target(NORMAL_PULSE);
+                    slope_cnt++;
+                }else {
+                    slope_cnt=0;
+                    slope_phase=0;
+                    ips200_clear();
+                    slope_flag=false;
+                }
+                break;
+        }
+    }
     else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag)
     {
 //        printf("%d\n",obstacle_phase);
         CURRENT_STATUS = Status_Stop;
-#if OBSTACLE_LEFTorRIGHT
+#if !OBSTACLE_LEFTorRIGHT && OBSTACLE_AT_STRAIGHT
         switch (obstacle_phase)
         {
             case 0:
@@ -828,7 +888,7 @@ void elec_handler()
                 break;
 
         }
-#else
+#elif OBSTACLE_LEFTorRIGHT && OBSTACLE_AT_STRAIGHT
         switch (obstacle_phase)
         {
             case 0:
@@ -907,32 +967,101 @@ void elec_handler()
                 break;
 
         }
+#elif !OBSTACLE_LEFTorRIGHT && !OBSTACLE_AT_STRAIGHT
+        switch (obstacle_phase)
+        {
+            case 0:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+                if(obstacle_pulse_cnt >= obstacle_pulse[0]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=1;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 1:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_pulse_cnt >= obstacle_pulse[1]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=2;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 2:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+                if(obstacle_pulse_cnt >= obstacle_pulse[2]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=0;
+                    CURRENT_STATUS = Status_Common;
+                    obstacle_flag=false;
+                    front_diuxian_flag=false;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            //用于中途跳出避障状态
+            case 7:
+                obstacle_pulse_cnt=0;
+                obstacle_phase=0;
+                CURRENT_STATUS = Status_Common;
+                obstacle_flag=false;
+                front_diuxian_flag=false;
+                break;
+        }
+#elif OBSTACLE_LEFTorRIGHT && !OBSTACLE_AT_STRAIGHT
+        switch (obstacle_phase)
+        {
+            case 0:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                if(obstacle_pulse_cnt >= obstacle_pulse[0]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=1;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 1:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                if(obstacle_pulse_cnt >= obstacle_pulse[1]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=2;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            case 2:
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                if(obstacle_pulse_cnt >= obstacle_pulse[2]){
+                    obstacle_pulse_cnt=0;
+                    obstacle_phase=0;
+                    CURRENT_STATUS = Status_Common;
+                    obstacle_flag=false;
+                    front_diuxian_flag=false;
+                }else{
+                    obstacle_pulse_cnt+=previous_pulseCount_1;
+                }
+                break;
+            //用于中途跳出避障状态
+            case 7:
+                obstacle_pulse_cnt=0;
+                obstacle_phase=0;
+                CURRENT_STATUS = Status_Common;
+                obstacle_flag=false;
+                front_diuxian_flag=false;
+                break;
+        }
 #endif
     }
-
-    else if(in_garage_flag)
+    else if(in_garage_flag && startup<=0)
     {
 #if !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-//        In_Garage();
+        In_Garage();
 #elif CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
         Stop_At_Stopline();
 #endif
     }
-    else if(slope_flag)
-    {
-        CURRENT_STATUS=Status_Common;
-        if(slope_cnt<Delay_cnt_calc(500))
-        {
-            set_pid_target(50);
-            slope_cnt++;
-        }
-        else
-        {
-           slope_cnt=0;
-           slope_flag=false;
-           set_pid_target(15);
-        }
-    }
+
 
 
     if (elec_handler_cnt == Delay_cnt_calc(5000)) {

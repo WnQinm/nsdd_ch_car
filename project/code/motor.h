@@ -23,11 +23,11 @@
 #if CAR_TYPE
 #define NORMAL_PULSE 23
 #define SLOW_PULSE 15
-#define FAST_PULSE 35
+#define FAST_PULSE 50
 #else
 #define NORMAL_PULSE 20
 #define SLOW_PULSE 15
-#define FAST_PULSE 40
+#define FAST_PULSE 50
 #endif
 
 #define NORMAL_DUTY 800
