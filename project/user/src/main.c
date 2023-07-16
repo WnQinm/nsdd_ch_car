@@ -1,3 +1,35 @@
+/*
+ * **************************************************************************
+ * ********************                                  ********************
+ * ********************      COPYRIGHT INFORMATION       ********************
+ * ********************                                  ********************
+ * **************************************************************************
+ *                                                                          *
+ *                                   _oo8oo_                                *
+ *                                  o8888888o                               *
+ *                                  88" . "88                               *
+ *                                  (| -_- |)                               *
+ *                                  0\  =  /0                               *
+ *                                ___/'==='\___                             *
+ *                              .' \\|     |// '.                           *
+ *                             / \\|||  :  |||// \                          *
+ *                            / _||||| -:- |||||_ \                         *
+ *                           |   | \\\  -  /// |   |                        *
+ *                           | \_|  ''\---/''  |_/ |                        *
+ *                           \  .-\__  '-'  __/-.  /                        *
+ *                         ___'. .'  /--.--\  '. .'___                      *
+ *                      ."" '<  '.___\_<|>_/___.'  >' "".                   *
+ *                     | | :  `- \`.:`\ _ /`:.`/ -`  : | |                  *
+ *                     \  \ `-.   \_ __\ /__ _/   .-` /  /                  *
+ *                 =====`-.____`.___ \_____/ ___.`____.-`=====              *
+ *                                   `=---=`                                *
+ * **************************************************************************
+ * ********************                                  ********************
+ * ********************      				             ********************
+ * ********************         佛祖保佑 永远无BUG          ********************
+ * ********************                                  ********************
+ * **************************************************************************
+ */
 #include "zf_common_headfile.h"
 #include "servo.h"
 #include "motor.h"
@@ -17,6 +49,7 @@ void img_handler();
 uint16 distance=0;
 long obstacle_pulse_cnt=0;
 uint8 obstacle_phase=0;
+uint8 obstacle_cnt=0;
 //uint16 obstacle_delay[7]={180,600,200,300,200,600,180};
 
 // 环岛用
@@ -25,9 +58,6 @@ float tmp_angle=90;
 // 过坡道相关
 uint16 slope_cnt=0;
 uint8 slope_phase=0;
-
-//启动保护，避免出库后再入库
-uint16 startup=3000;
 
 // 调试相关
 #if MOTOR_DEBUG_STATUS
@@ -82,13 +112,11 @@ int main (void)
     wait_for_charge();
     ADC_DeInit(ADC2);
 #endif
-//
-//    motorPWML = 1200;
-//    motorPWMR = 1200;
 
     ADC_init();
     Main_pit_init();
-    motor_control(1200,1200);
+    motorPWML = 1500;
+    motorPWMR = 1500;
     set_pid_target(NORMAL_PULSE);
 
 
@@ -152,8 +180,10 @@ void ips200_show()
 
 //    ips200_show_string(110,40,"Distance: ");
 //    ips200_show_int(150,40,distance,5);
-    ips200_show_string(110,60,"Voltage: ");
-    ips200_show_float(150,60,voltage_now,2,3);
+//    ips200_show_string(110,60,"Voltage: ");
+//    ips200_show_float(150,60,voltage_now,2,3);
+    ips200_show_string(0,100,"obstacle_cnt: ");
+    ips200_show_int(80,100,obstacle_cnt,2);
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
@@ -254,16 +284,16 @@ void elec_handler()
     }
 
 #if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-    //红外避障判断，100ms一次
     #if ENABLE_TOF
-    if (!slope_flag && !obstacle_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
+    if (!obstacle_flag && elec_handler_cnt % Delay_cnt_calc(50) == 0)
     {
+        // 红外避障判断，100ms一次
         // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
         distance = Get_Distance();
 //        printf("Dis: %d",distance);
         ips200_show_string(0,0,"distance: ");
         ips200_show_int(50,0,distance,5);
-        if (distance <= OBSTACLE_DIS)
+        if (100<=distance && distance <= OBSTACLE_DIS)
         {
 //            printf("Obstacle!");
             obstacle_flag=true;
@@ -271,6 +301,8 @@ void elec_handler()
         }
     }
     #endif
+
+    //霍尔停车
     #if ENABLE_HALL
     if(elec_handler_cnt % Delay_cnt_calc(10) == 0){
         in_garage_flag=isStopLine();
@@ -284,11 +316,6 @@ void elec_handler()
     }
     #endif
 #endif
-
-    // 发车保护，每过1ms startup变量-1，减到0后可以入库，防止发车后就入库
-    if(startup>0) {
-        startup--;
-    }
 
     // 电机、舵机调试处理程序，500ms一次
 #if MOTOR_DEBUG_STATUS
@@ -354,15 +381,15 @@ void elec_handler()
 
 
     // 环岛处理程序
-    if(!left_circle_flag && !right_circle_flag && !obstacle_flag && !slope_flag && !in_garage_flag)
+    if(!left_circle_flag && !right_circle_flag && !obstacle_flag && !in_garage_flag)
     {
         judgement();
         CURRENT_STATUS = Status_Common;
-#if !MOTOR_DEBUG_STATUS&&!SERVO_DEBUG_STATUS
+#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
     set_pid_target(NORMAL_PULSE);
 #endif
     }
-    else if(left_circle_flag || right_circle_flag)
+    else if((left_circle_flag || right_circle_flag) && !obstacle_flag)
     {
         static uint16 cnt=0;
 #if CAR_TYPE
@@ -749,11 +776,15 @@ void elec_handler()
         }
 #endif
     }
+#if ENABLE_SLOPE
     // 坡道处理程序
-    else if(slope_flag)
+    #if SLOPE_BEFORE_OBSTACLE
+    else if(obstacle_flag && obstacle_cnt==0)
+    #else
+    else if(obstacle_flag && obstacle_cnt==1)
+    #endif
     {
         CURRENT_STATUS=Status_Common;
-        obstacle_flag=false;
         ips200_show_string(0,200,"Slope!");
         switch (slope_phase) {
             case 0:
@@ -784,13 +815,19 @@ void elec_handler()
                     slope_cnt=0;
                     slope_phase=0;
                     ips200_clear();
-                    slope_flag=false;
+                    obstacle_flag=false;
+                    obstacle_cnt=1;
                 }
                 break;
         }
     }
+#endif
     // 避障处理程序
-    else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag)
+    #if SLOPE_BEFORE_OBSTACLE
+    else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag && obstacle_cnt==1)
+    #else
+    else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag && obstacle_cnt==0)
+    #endif
     {
 //        printf("%d\n",obstacle_phase);
         CURRENT_STATUS = Status_Stop;
@@ -858,7 +895,7 @@ void elec_handler()
                     obstacle_phase=0;
                     CURRENT_STATUS = Status_Common;
                     obstacle_flag=false;
-                    front_diuxian_flag=false;
+                    obstacle_cnt++;
                 }else{
                     obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
@@ -869,7 +906,7 @@ void elec_handler()
                 obstacle_phase=0;
                 CURRENT_STATUS = Status_Common;
                 obstacle_flag=false;
-                front_diuxian_flag=false;
+                obstacle_cnt++;
                 break;
 
         }
@@ -937,7 +974,7 @@ void elec_handler()
                     obstacle_phase=0;
                     CURRENT_STATUS = Status_Common;
                     obstacle_flag=false;
-                    front_diuxian_flag=false;
+                    obstacle_cnt++;
                 }else{
                     obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
@@ -948,7 +985,7 @@ void elec_handler()
                 obstacle_phase=0;
                 CURRENT_STATUS = Status_Common;
                 obstacle_flag=false;
-                front_diuxian_flag=false;
+                obstacle_cnt++;
                 break;
 
         }
@@ -980,7 +1017,7 @@ void elec_handler()
                     obstacle_phase=0;
                     CURRENT_STATUS = Status_Common;
                     obstacle_flag=false;
-                    front_diuxian_flag=false;
+                    obstacle_cnt++;
                 }else{
                     obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
@@ -991,7 +1028,7 @@ void elec_handler()
                 obstacle_phase=0;
                 CURRENT_STATUS = Status_Common;
                 obstacle_flag=false;
-                front_diuxian_flag=false;
+                obstacle_cnt++;
                 break;
         }
 #elif OBSTACLE_LEFTorRIGHT && !OBSTACLE_AT_STRAIGHT
@@ -1022,7 +1059,7 @@ void elec_handler()
                     obstacle_phase=0;
                     CURRENT_STATUS = Status_Common;
                     obstacle_flag=false;
-                    front_diuxian_flag=false;
+                    obstacle_cnt++;
                 }else{
                     obstacle_pulse_cnt+=previous_pulseCount_1;
                 }
@@ -1033,7 +1070,7 @@ void elec_handler()
                 obstacle_phase=0;
                 CURRENT_STATUS = Status_Common;
                 obstacle_flag=false;
-                front_diuxian_flag=false;
+                obstacle_cnt++;
                 break;
         }
 #endif

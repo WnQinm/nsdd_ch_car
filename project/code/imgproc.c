@@ -225,7 +225,7 @@ void findline()
         road_width[row] = rightline[row]-leftline[row];
 
         // 当前行宽度变大&&(第一次找到宽度变大的行||(不是第一次找到但上一行也宽度变大(即行数变宽得连续)))
-        if(road_width[row]>Road_Width_Min+5 && (lostline_cnt==0 || (lostline_cnt!=0 && road_width[row+1]>Road_Width_Min+5)))
+        if(road_width[row]>Road_Width_Min*1.5 && (lostline_cnt==0 || (lostline_cnt!=0 && road_width[row+1]>Road_Width_Min*1.5)))
             lostline_cnt++;
 
 //        printf("%d\n", road_width[row]);
@@ -236,18 +236,6 @@ void findline()
 //    if(lostline_cnt>Road_Width_Min+5)
 //        lostline_cnt = 0;
 
-#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-    if(!slope_flag)
-    {
-        for(int row=ROW/4;row>1;row--)
-        {
-            if(row==2)
-                slope_flag=true;
-            if((leftline[row]>COL/2-Road_Width_Min) && (rightline[row]<COL/2+Road_Width_Min) && (road_width[row]>=Road_Width_Min))
-                break;
-        }
-    }
-#endif
 
     for(int row=ROW-2;row>SearchLineEndRow-1;row--)//只记录第一次丢线
     {

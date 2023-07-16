@@ -52,7 +52,7 @@ void wait_for_charge(){
     ips200_show_string(0, 20, "running out...");
     //×²»÷
     motor_control(1500,1500);
-    system_delay_ms(1000);
+    system_delay_ms(3000);
     motor_control(0,0);
     system_delay_ms(5000);
     out_garage_flag=true;
