@@ -18,29 +18,6 @@ uint16 distance=0;
 long obstacle_pulse_cnt=0;
 uint8 obstacle_phase=0;
 //uint16 obstacle_delay[7]={180,600,200,300,200,600,180};
-#if OBSTACLE_AT_STRAIGHT
-    #if !CAR_TYPE&&!OBSTACLE_LEFTorRIGHT
-    long obstacle_pulse[7]={1300,1700,800,1000,800,1700,1100};
-    #elif !CAR_TYPE&&OBSTACLE_LEFTorRIGHT
-    long obstacle_pulse[7]={800,1700,1300,1000,1100,1700,800};
-    #elif CAR_TYPE && !OBSTACLE_LEFTorRIGHT
-    long obstacle_pulse[7]={1500,1000,900,500,1200,1700,1500};
-    #elif CAR_TYPE && OBSTACLE_LEFTorRIGHT
-    long obstacle_pulse[7]={900,1000,1500,500,1500,1700,1200};
-    #endif
-#else
-    #if !CAR_TYPE&&!OBSTACLE_LEFTorRIGHT
-    long obstacle_pulse[3]={1500,10000,1500};
-    #elif !CAR_TYPE&&OBSTACLE_LEFTorRIGHT
-    long obstacle_pulse[3]={1000,6000,1000};
-    #elif CAR_TYPE && !OBSTACLE_LEFTorRIGHT
-    long obstacle_pulse[3]={1500,10000,1500};
-    #elif CAR_TYPE && OBSTACLE_LEFTorRIGHT
-    long obstacle_pulse[3]={1500,10000,1500};
-    #endif
-#endif
-
-
 
 // 环岛用
 float tmp_angle=90;
@@ -70,7 +47,9 @@ int main (void)
     motor_init();
     mt9v03x_init();
     ips200_init(IPS200_TYPE_PARALLEL8);
-//    tofInit();
+#if ENABLE_TOF
+    tofInit();
+#endif
     hallInit();
 
     timer_init(TIM_5, TIMER_MS);//计时器，查看程序运行时间
@@ -109,7 +88,7 @@ int main (void)
 
     ADC_init();
     Main_pit_init();
-    motor_control(800,800);
+    motor_control(1200,1200);
     set_pid_target(NORMAL_PULSE);
 
 
@@ -151,14 +130,6 @@ int main (void)
         if(mt9v03x_finish_flag)
         {
             img_handler();
-
-//#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-//            if(isStopLine())
-//            {
-//                in_garage_flag=isStopLine();
-//            }
-//#endif
-
             mt9v03x_finish_flag = 0;
         }
         // 此处编写需要循环执行的代码
@@ -255,6 +226,8 @@ void elec_handler()
     Read_ADC();
 
     static uint32 elec_handler_cnt = 0;// 通过count计数实现delay效果
+
+    // 电机pid，5ms一次
     if(elec_handler_cnt%Delay_cnt_calc(5)==0)
     {
         getPulseCount();
@@ -281,40 +254,43 @@ void elec_handler()
     }
 
 #if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-//    //红外避障
-//    if (!slope_flag && !obstacle_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
-//    {
-//        // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
-//        distance = Get_Distance();
-////        printf("Dis: %d",distance);
-//        ips200_show_string(0,0,"distance: ");
-//        ips200_show_int(50,0,distance,5);
-//        if (distance <= OBSTACLE_DIS)
-//        {
-////            printf("Obstacle!");
-//            obstacle_flag=true;
-//            obstacle_pulse_cnt=0;
-//        }
-//    }
+    //红外避障判断，100ms一次
+    #if ENABLE_TOF
+    if (!slope_flag && !obstacle_flag && elec_handler_cnt % Delay_cnt_calc(100) == 0)
+    {
+        // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
+        distance = Get_Distance();
+//        printf("Dis: %d",distance);
+        ips200_show_string(0,0,"distance: ");
+        ips200_show_int(50,0,distance,5);
+        if (distance <= OBSTACLE_DIS)
+        {
+//            printf("Obstacle!");
+            obstacle_flag=true;
+            obstacle_pulse_cnt=0;
+        }
+    }
+    #endif
+    #if ENABLE_HALL
     if(elec_handler_cnt % Delay_cnt_calc(10) == 0){
         in_garage_flag=isStopLine();
         if(!judgeStopline()){   //用霍尔传感器检测停止线
-#if CAR_TYPE
+        #if CAR_TYPE
             Stop_At_Stopline();
-#else
+        #else
             In_Garage_with_Hall();
-#endif
+        #endif
         }
     }
+    #endif
 #endif
-//    //电池电量检测
-//    if(elec_handler_cnt%Delay_cnt_calc(5000)){
-//        Get_Battery_Voltage();
-//    }
+
+    // 发车保护，每过1ms startup变量-1，减到0后可以入库，防止发车后就入库
     if(startup>0) {
         startup--;
     }
 
+    // 电机、舵机调试处理程序，500ms一次
 #if MOTOR_DEBUG_STATUS
     if(elec_handler_cnt%Delay_cnt_calc(500)==2){
         static char buff[64];
@@ -372,6 +348,12 @@ void elec_handler()
     }
 #endif
 
+
+
+
+
+
+    // 环岛处理程序
     if(!left_circle_flag && !right_circle_flag && !obstacle_flag && !slope_flag && !in_garage_flag)
     {
         judgement();
@@ -767,6 +749,7 @@ void elec_handler()
         }
 #endif
     }
+    // 坡道处理程序
     else if(slope_flag)
     {
         CURRENT_STATUS=Status_Common;
@@ -806,6 +789,7 @@ void elec_handler()
                 break;
         }
     }
+    // 避障处理程序
     else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag)
     {
 //        printf("%d\n",obstacle_phase);

@@ -20,17 +20,6 @@
 #define MOTOR2_A   D15                      // 定义2电机正反转引脚
 #define MOTOR2_B   TIM4_PWM_MAP1_CH3_D14         // 定义2电机PWM引脚
 
-#if CAR_TYPE
-#define NORMAL_PULSE 23
-#define SLOW_PULSE 15
-#define FAST_PULSE 50
-#else
-#define NORMAL_PULSE 20
-#define SLOW_PULSE 15
-#define FAST_PULSE 50
-#endif
-
-#define NORMAL_DUTY 800
 
 /*pid*/
 typedef struct

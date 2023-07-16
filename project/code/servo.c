@@ -10,13 +10,6 @@
 float Angle=90;
 
 // µç´Å²ÎÊý
-#if CAR_TYPE
-float elec_Kp = 11.5;//15;
-float elec_Kd = 5;//25;//23.5;//23;//22;//20.5;//19.5;
-#else
-float elec_Kp = 9;//15;
-float elec_Kd = 7;//25;//23.5;//23;//22;//20.5;//19.5;
-#endif
 float current_err_common, current_err_circle;
 float last_err_elec=0;
 

@@ -243,7 +243,7 @@ void findline()
         {
             if(row==2)
                 slope_flag=true;
-            if(leftline[row]<COL/2-Road_Width_Min || rightline[row]>COL/2+Road_Width_Min || road_width[row]<=Road_Width_Min+5)
+            if((leftline[row]>COL/2-Road_Width_Min) && (rightline[row]<COL/2+Road_Width_Min) && (road_width[row]>=Road_Width_Min))
                 break;
         }
     }

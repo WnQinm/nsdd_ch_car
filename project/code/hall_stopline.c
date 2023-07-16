@@ -8,11 +8,7 @@
 #include "hall_stopline.h"
 
 //uint16 stopline_delay[2]={800,800};
-uint16 stopline_pulse[3]={2700,4200,3000};  //仅限小车，小车已调整完成
-uint16 In_Garage_with_Hall_pulse[4]={1000,300,2500,1200};  //仅限小车
-uint16 stopAtStopline_pulse=3000;  //仅限大车，大车已调整完成
 //uint16 outgarage_delay[4]={1000,875,300,1500};
-uint16 outgarage_pulse[3]={1300,2300,1500};  //仅限大车，大车已调整完成
 
 void hallInit()
 {
@@ -55,10 +51,10 @@ void wait_for_charge(){
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
     ips200_show_string(0, 20, "running out...");
     //撞击
-    motor_control(1000,1000);
+    motor_control(1500,1500);
     system_delay_ms(1000);
     motor_control(0,0);
-    system_delay_ms(10000);
+    system_delay_ms(5000);
     out_garage_flag=true;
     ips200_clear();
 }
@@ -78,12 +74,14 @@ void out_garage()
     ips200_show_string(0, 0, "wait for key1 to start...");
     while(!out_garage_flag)
     {
+        pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
         key_scanner();
         switch(key_get_state(KEY_1))
         {
             case KEY_SHORT_PRESS:
             case KEY_LONG_PRESS:
                 ips200_show_string(0, 20, "running out...");
+#if !LAUNCH_FORWARD
                 //直走
                 for(uint16 i=0;i<outgarage_pulse[0];i+=previous_pulseCount_1){
                     getPulseCount();
@@ -110,6 +108,34 @@ void out_garage()
                     motor_control(-1000,-1000);
                     system_delay_ms(MAIN_PIT_ms_INTERVAL);
                 }
+#else
+                //直走
+                for(uint16 i=0;i<outgarage_pulse[0];i+=previous_pulseCount_1){
+                    getPulseCount();
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                    motor_control(1200,1200);
+                    system_delay_ms(MAIN_PIT_ms_INTERVAL);
+                }
+                //左转
+                for(uint16 i=0;i<outgarage_pulse[1];i+=previous_pulseCount_1){
+                    getPulseCount();
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+                    motor_control(1200,1200);
+                    system_delay_ms(MAIN_PIT_ms_INTERVAL);
+                }
+                //停止
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                motor_control(0,0);
+                system_delay_ms(300);
+                getPulseCount();
+                //后退，接近小车
+                for(uint16 i=0;i<outgarage_pulse[2];i+=previous_pulseCount_1){
+                    getPulseCount();
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                    motor_control(-1000,-1000);
+                    system_delay_ms(MAIN_PIT_ms_INTERVAL);
+                }
+#endif
                 //停止，等待充电
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
                 motor_control(0,0);
@@ -174,6 +200,7 @@ void In_Garage_with_Hall()
 {
     ips200_clear();
     ips200_show_string(0,0,"Garage!");
+#if !LAUNCH_FORWARD
     //直走
     for(uint16 i=0;i<In_Garage_with_Hall_pulse[0];i+=previous_pulseCount_1){
         getPulseCount();
@@ -206,6 +233,40 @@ void In_Garage_with_Hall()
     //停止，入库完成
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
     motor_control(0,0);
+#else
+    //直走
+    for(uint16 i=0;i<In_Garage_with_Hall_pulse[0];i+=previous_pulseCount_1){
+        getPulseCount();
+        pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+        motor_control(1200,1200);
+        system_delay_ms(1);
+    }
+    ips200_show_string(0,20,"P1 Finished!");
+    //停稳
+    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+    motor_control(0,0);
+    system_delay_ms(In_Garage_with_Hall_pulse[1]);
+    ips200_show_string(0,40,"P2 Finished!");
+    //倒车入库
+    for(uint16 i=0;i<In_Garage_with_Hall_pulse[2];i+=previous_pulseCount_1){
+        getPulseCount();
+        pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+        motor_control(-1200,-1200);
+        system_delay_ms(1);
+    }
+    ips200_show_string(0,60,"P3 Finished!");
+    //直线入库
+    for(uint16 i=0;i<In_Garage_with_Hall_pulse[3];i+=previous_pulseCount_1){
+        getPulseCount();
+        pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+        motor_control(-1200,-1200);
+        system_delay_ms(1);
+    }
+    ips200_show_string(0,80,"P4 Finished!");
+    //停止，入库完成
+    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+    motor_control(0,0);
+#endif
     ips200_clear();
     ips200_show_string(0,100,"Finished!");
     while(1){}

@@ -13,6 +13,7 @@
 #include "motor.h"
 #include "imgproc.h"
 #include "judgement.h"
+#include "config.h"
 
 #define HALL_PIN                (B2)
 

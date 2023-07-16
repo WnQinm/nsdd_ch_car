@@ -29,6 +29,7 @@ void judgement()
         cross_flag = false;
         cross_cnt%=CROSS_DELAY_TIME;
     }
+#if ENABLE_LOOP
     else if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && Angle<91 && adc_LL>circle_threshold && adc_RR<circle_threshold)
     {// ×ó»·µºÅÐ¶Ï
         left_circle_flag = true;
@@ -41,6 +42,7 @@ void judgement()
         circle_status = 1;
         cross_cnt = 0;
     }
+#endif
 
     if(cross_cnt<=CROSS_DELAY_TIME)
         cross_cnt++;
