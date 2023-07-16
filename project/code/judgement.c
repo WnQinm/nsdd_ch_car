@@ -10,11 +10,16 @@ RaceStatus CURRENT_STATUS = Status_Common;
 
 uint8 out_garage_flag = false, in_garage_flag = false;
 uint8 left_circle_flag=false, right_circle_flag=false, cross_flag=false, obstacle_flag=false, front_diuxian_flag=false, slope_flag=false;
-uint8 circle_threshold=80, cross_threshold=80;
+#if CAR_TYPE
+uint8 circle_threshold=60, cross_threshold=60;
+#else
+uint8 circle_threshold=70, cross_threshold=70;
+#endif
 uint8 circle_status=0;//环岛处理标志
 bool out_flag = false;
 
 uint16 cross_cnt = 0;
+uint32 circle_cnt = 5000;
 
 void judgement()
 {
@@ -30,13 +35,13 @@ void judgement()
         cross_cnt%=CROSS_DELAY_TIME;
     }
 #if ENABLE_LOOP
-    else if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && Angle<91 && adc_LL>circle_threshold && adc_RR<circle_threshold)
+    else if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && circle_cnt>=Circle_Delay_time && Angle<91 && adc_LL>circle_threshold && adc_RR<circle_threshold)
     {// 左环岛判断
         left_circle_flag = true;
         circle_status = 1;
         cross_cnt = 0;
     }
-    else if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && Angle>89 && adc_LL<circle_threshold && adc_RR>circle_threshold)
+    else if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && circle_cnt>=Circle_Delay_time && Angle>89 && adc_LL<circle_threshold && adc_RR>circle_threshold)
     {// 右环岛判断
         right_circle_flag = true;
         circle_status = 1;
@@ -47,6 +52,8 @@ void judgement()
     if(cross_cnt<=CROSS_DELAY_TIME)
         cross_cnt++;
 
+    if(circle_cnt<=Circle_Delay_time)
+        circle_cnt++;
 }
 
 

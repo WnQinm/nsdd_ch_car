@@ -40,6 +40,9 @@ extern _pid Lmotor_pid, Rmotor_pid;
 extern int16 pulseCount_1, pulseCount_2;
 extern uint16 previous_pulseCount_1;
 extern int16 motorPWML, motorPWMR;
+extern uint8 get_pulse_sum_flag;
+extern int32 pulsesum;
+
 void PID_param_init();
 void set_pid_target(float temp_val);
 float get_pid_target(void);

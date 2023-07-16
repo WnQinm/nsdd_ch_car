@@ -1,7 +1,7 @@
 /*
  * **************************************************************************
  * ********************                                  ********************
- * ********************      COPYRIGHT INFORMATION       ********************
+ * ********************               NSDD               ********************
  * ********************                                  ********************
  * **************************************************************************
  *                                                                          *
@@ -26,7 +26,7 @@
  * **************************************************************************
  * ********************                                  ********************
  * ********************      				             ********************
- * ********************         佛祖保佑 永远无BUG          ********************
+ * ********************         佛祖保佑 永无BUG         ********************
  * ********************                                  ********************
  * **************************************************************************
  */
@@ -103,15 +103,15 @@ int main (void)
     PID_param_init();
     // 1m/s 54pulse/5ms
 
-#if CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-    out_garage();
-    system_delay_ms(3000);
-    wait_for_launch();
-#elif !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-    ADC_Battery_init();
-    wait_for_charge();
-    ADC_DeInit(ADC2);
-#endif
+//#if CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+//    out_garage();
+//    system_delay_ms(3000);
+//    wait_for_launch();
+//#elif !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+//    ADC_Battery_init();
+//    wait_for_charge();
+//    ADC_DeInit(ADC2);
+//#endif
 
     ADC_init();
     Main_pit_init();
@@ -182,12 +182,12 @@ void ips200_show()
 //    ips200_show_int(150,40,distance,5);
 //    ips200_show_string(110,60,"Voltage: ");
 //    ips200_show_float(150,60,voltage_now,2,3);
-    ips200_show_string(0,100,"obstacle_cnt: ");
-    ips200_show_int(80,100,obstacle_cnt,2);
+//    ips200_show_string(0,100,"obstacle_cnt: ");
+//    ips200_show_int(80,100,obstacle_cnt,2);
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
-    ips200_show_int(80, 170, adc_M, 5);
+//    ips200_show_int(80, 170, adc_M, 5);
     ips200_show_int(120, 170, adc_R, 5);
     ips200_show_int(160, 170, adc_RR, 5);
 
@@ -244,7 +244,7 @@ void ips200_show()
         ips200_show_string(0, 270, "cross");
     else if(!cross_flag)
         ips200_show_string(0, 270, "     ");
-    ips200_show_int(100, 270, cross_cnt, 6);
+    ips200_show_int(100, 270, circle_cnt, 6);
 
 #endif
 }
@@ -399,29 +399,12 @@ void elec_handler()
         {
             case 1:// step1 避开第一个断口(正常巡线应该就行)
                 CURRENT_STATUS = Status_Common;
-
-                if(adc_LL>circle_threshold)
+                if(!get_pulse_sum_flag)
+                    get_pulse_sum_flag = true;
+                if(pulsesum>=2000)//todo 待测试
                 {
                     circle_status++;
-                    cnt = 0;
-                    break;
-                }
-
-                // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                {
-                    circle_status = 0;
-                    cnt = 0;
-                    left_circle_flag = false;
-                    cross_cnt = 0;
-                    cross_flag = true;
-                }
-                break;
-            case 2:
-                CURRENT_STATUS = Status_Common;
-                if(adc_LL<circle_threshold/2 && adc_RR<circle_threshold)
-                {
-                    circle_status++;
+                    pulsesum = 0;
                     break;
                 }
                 // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
@@ -434,55 +417,45 @@ void elec_handler()
                     cross_flag = true;
                 }
                 break;
-            case 3:
-                CURRENT_STATUS = Status_Common;
-                if(adc_LL>circle_threshold-circle_threshold/10 && adc_RR<circle_threshold)
-                {
-                    circle_status++;
-                    break;
-                }
-                // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                {
-                    circle_status = 0;
-                    cnt = 0;
-                    left_circle_flag = false;
-                    cross_cnt = 0;
-                    cross_flag = true;
-                }
-                break;
-            case 4:// step2 第二个断口入环，强行扭头入环
+            case 2:// step2 第二个断口入环，强行扭头入环
                 CURRENT_STATUS = Status_Stop;
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(100));
-                if(++cnt>Delay_cnt_calc(500))
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(101));
+                if(pulsesum>=1600)
                 {
                     circle_status++;
-                    cnt = 0;
+                    pulsesum=0;
+                    get_pulse_sum_flag = false;
                 }
                 break;
-            case 5:// step3 正常巡线
+            case 3:// step3 正常巡线
                 CURRENT_STATUS = Status_Common;
-                if(adc_RR>circle_threshold)
+                tmp_angle = (tmp_angle+Angle)/2;
+                if(adc_RR>circle_threshold/2)
                 {
                     circle_status++;
+                    tmp_angle = tmp_angle+3;
+                    get_pulse_sum_flag = true;
                 }
                 break;
-            case 6:// step4 出环（正常巡线应该可以）
+            case 4:// step4 出环
                 CURRENT_STATUS = Status_Stop;
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(98));
-                if(++cnt>Delay_cnt_calc(750))// && adc_LL<circle_threshold
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(tmp_angle));
+                if(pulsesum>=1500)//++cnt>Delay_cnt_calc(500))
                 {
                     circle_status++;
-                    cnt = 0;
+                    pulsesum=0;
                 }
                 break;
-            case 7:// step5 出环后
-                CURRENT_STATUS = Status_Common;
-                if(++cnt>Delay_cnt_calc(500))
+            case 5:// step5 出环后
+                CURRENT_STATUS = Status_RCamera;
+                if(pulsesum>=2000)//++cnt>Delay_cnt_calc(500))
                 {
-                    cnt = 0;
                     circle_status = 0;
+                    cross_cnt = 0;
                     left_circle_flag = false;
+                    pulsesum = 0;
+                    get_pulse_sum_flag = false;
+                    circle_cnt = 0;
                 }
                 break;
         }
@@ -588,29 +561,12 @@ void elec_handler()
             {
                 case 1:// step1 避开第一个断口(正常巡线应该就行)
                     CURRENT_STATUS = Status_Common;
-
-                    if(adc_LL>circle_threshold)
+                    if(!get_pulse_sum_flag)
+                        get_pulse_sum_flag = true;
+                    if(pulsesum>=4000)//todo 待测试
                     {
                         circle_status++;
-                        cnt = 0;
-                        break;
-                    }
-
-                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                    {
-                        circle_status = 0;
-                        cnt = 0;
-                        left_circle_flag = false;
-                        cross_cnt = 0;
-                        cross_flag = true;
-                    }
-                    break;
-                case 2:
-                    CURRENT_STATUS = Status_Common;
-                    if(adc_LL<circle_threshold/2 && adc_RR<circle_threshold)
-                    {
-                        circle_status++;
+                        pulsesum = 0;
                         break;
                     }
                     // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
@@ -623,57 +579,45 @@ void elec_handler()
                         cross_flag = true;
                     }
                     break;
-                case 3:
-                    CURRENT_STATUS = Status_Common;
-                    if(adc_LL>circle_threshold-circle_threshold/10 && adc_RR<circle_threshold)
-                    {
-                        circle_status++;
-                        break;
-                    }
-                    // 如果一边大了之后，两边同时都大了，说明误判了，当前应该是十字
-                    if(adc_LL>circle_threshold && adc_RR>circle_threshold)
-                    {
-                        circle_status = 0;
-                        cnt = 0;
-                        left_circle_flag = false;
-                        cross_cnt = 0;
-                        cross_flag = true;
-                    }
-                    break;
-                case 4:// step2 第二个断口入环，强行扭头入环
+                case 2:// step2 第二个断口入环，强行扭头入环
                     CURRENT_STATUS = Status_Stop;
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(98));
-                    if(++cnt>Delay_cnt_calc(500))
+                    if(pulsesum>=1600)
                     {
                         circle_status++;
-                        cnt=0;
+                        pulsesum=0;
+                        get_pulse_sum_flag = false;
                     }
                     break;
-                case 5:// step3 正常巡线
+                case 3:// step3 正常巡线
                     CURRENT_STATUS = Status_Common;
                     tmp_angle = (tmp_angle+Angle)/2;
-                    if(adc_RR>circle_threshold-circle_threshold/10*2)
+                    if(adc_RR>circle_threshold/2)
                     {
                         circle_status++;
-                        tmp_angle = tmp_angle+2;
+                        tmp_angle = tmp_angle+3;
+                        get_pulse_sum_flag = true;
                     }
                     break;
-                case 6:// step4 出环（正常巡线应该可以）
+                case 4:// step4 出环
                     CURRENT_STATUS = Status_Stop;
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(tmp_angle));
-                    if(++cnt>Delay_cnt_calc(500))
+                    if(pulsesum>=1100)//++cnt>Delay_cnt_calc(500))
                     {
                         circle_status++;
-                        cnt = 0;
+                        pulsesum=0;
                     }
                     break;
-                case 7:// step5 出环后
-                    CURRENT_STATUS = Status_Common;
-                    if(++cnt>Delay_cnt_calc(500))
+                case 5:// step5 出环后
+                    CURRENT_STATUS = Status_RCamera;
+                    if(pulsesum>=2000)//++cnt>Delay_cnt_calc(500))
                     {
-                        cnt=0;
                         circle_status = 0;
+                        cross_cnt = 0;
                         left_circle_flag = false;
+                        pulsesum = 0;
+                        get_pulse_sum_flag = false;
+                        circle_cnt = 0;
                     }
                     break;
             }

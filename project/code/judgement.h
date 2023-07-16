@@ -11,6 +11,7 @@
 // todo �����ٶȸ���Ҫ��С���������ӳ��ж�ʮ��
 // ��ʮ�ֵ�ʱ�䣬��ֹ�ڹ�ʮ���ڼ��ظ��ж�ʮ��
 #define CROSS_DELAY_TIME 1500
+#define Circle_Delay_time 5000
 
 // ��·״̬ö��
 // �������԰�ѭ���߷�����
@@ -37,6 +38,7 @@ extern uint8 left_circle_flag, right_circle_flag, cross_flag, obstacle_flag, fro
 extern uint8 circle_threshold, cross_threshold;
 extern uint8 circle_status;
 extern uint16 cross_cnt;
+extern uint32 circle_cnt;
 extern bool out_flag;
 
 #endif /* JUDGEMENT_H_ */

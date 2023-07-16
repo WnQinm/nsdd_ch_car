@@ -339,7 +339,7 @@ void TIM6_IRQHandler(void)
 //       {
 //           while(1) motor_control(0, 0);
 //       }
-//       else
+       else
            elec_handler();
 
        servo_control(CURRENT_STATUS);

@@ -8,6 +8,8 @@
 
 int16 pulseCount_1, pulseCount_2;
 uint16 previous_pulseCount_1=0;
+uint8 get_pulse_sum_flag = false;
+int32 pulsesum = 0;
 int16 pulsesum_1, pulsesum_2;
 int16 motorPWML=0, motorPWMR=0;
 
@@ -49,6 +51,10 @@ void getPulseCount()
     pulseCount_1 = Speed_Low_Filter(pulseCount_1, speed_Record1);
     pulseCount_2 = Speed_Low_Filter(pulseCount_2, speed_Record2);
 
+    if(get_pulse_sum_flag)
+    {
+        pulsesum += (int32)(pulseCount_1+pulseCount_2)/2;
+    }
 }
 
 void motor_control(int32 duty_1, int32 duty_2)
