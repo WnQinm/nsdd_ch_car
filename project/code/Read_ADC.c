@@ -92,11 +92,11 @@ void Read_ADC()
     adc_RR=kalman_filter(&kfp4, adc_mean_filter_convert(ADC1_IN1_A1, 10));//ср╨А
 #endif
 
-    adc_LL = Normal(adc_LL);
-    adc_L = Normal(adc_L);
-    adc_M = Normal(adc_M);
-    adc_R = Normal(adc_R);
-    adc_RR = Normal(adc_RR);
+//    adc_LL = Normal(adc_LL);
+//    adc_L = Normal(adc_L);
+//    adc_M = Normal(adc_M);
+//    adc_R = Normal(adc_R);
+//    adc_RR = Normal(adc_RR);
 
     if (adc_LL + adc_RR + adc_L + adc_R<100)
         out_flag = true;

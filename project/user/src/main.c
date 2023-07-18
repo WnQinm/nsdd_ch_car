@@ -115,9 +115,9 @@ int main (void)
 #endif
 
     ADC_init();
-    Main_pit_init();
     motorPWML = 1500;
     motorPWMR = 1500;
+    Main_pit_init();
     set_pid_target(NORMAL_PULSE);
 
 
@@ -190,7 +190,7 @@ void ips200_show()
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
-//    ips200_show_int(80, 170, adc_M, 5);
+    ips200_show_int(80, 170, adc_M, 5);
     ips200_show_int(120, 170, adc_R, 5);
     ips200_show_int(160, 170, adc_RR, 5);
 
@@ -397,7 +397,7 @@ void elec_handler()
     set_pid_target(NORMAL_PULSE);
 #endif
     }
-    else if((left_circle_flag || right_circle_flag) && !obstacle_flag)
+    else if((left_circle_flag || right_circle_flag) && !obstacle_flag && !in_garage_flag)
     {
         static uint16 cnt=0;
 #if CAR_TYPE
@@ -729,8 +729,8 @@ void elec_handler()
 #endif
     }
 
-#if ENABLE_SLOPE
     // 坡道处理程序
+#if ENABLE_SLOPE
     #if SLOPE_BEFORE_OBSTACLE
     else if(obstacle_flag && obstacle_cnt==0)
     #else
@@ -788,187 +788,281 @@ void elec_handler()
     // 避障处理程序
 #if ENABLE_OBSTACLE
     #if SLOPE_BEFORE_OBSTACLE
-    else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag && obstacle_cnt==1)
+    else if(obstacle_flag && obstacle_cnt==1)
     #else
-    else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag && obstacle_cnt==0)
+    else if(obstacle_flag && obstacle_cnt==0)
     #endif
     {
 //        printf("%d\n",obstacle_phase);
         CURRENT_STATUS = Status_Stop;
+        getPulseCount();
 #if !OBSTACLE_LEFTorRIGHT && OBSTACLE_AT_STRAIGHT
-        switch (obstacle_phase)
-        {
-            case 0:
+        for(uint16 i=0;i<obstacle_pulse[0];i+=previous_pulseCount_1){
+            getPulseCount();
 #if CAR_TYPE
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
 #else
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
 #endif
-                if(obstacle_pulse_cnt >= obstacle_pulse[0]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=1;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 1:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_pulse_cnt >= obstacle_pulse[1]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=2;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 2:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-                if(obstacle_pulse_cnt >= obstacle_pulse[2]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=3;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 3:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_pulse_cnt >= obstacle_pulse[3]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=4;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 4:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-                if(obstacle_pulse_cnt >= obstacle_pulse[4]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=5;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 5:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_pulse_cnt >= obstacle_pulse[5]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=6;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 6:
-#if CAR_TYPE
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
-#else
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-#endif
-                if(obstacle_pulse_cnt >= obstacle_pulse[6]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=0;
-                    CURRENT_STATUS = Status_Common;
-                    obstacle_flag=false;
-                    obstacle_cnt++;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            //用于中途跳出避障状态
-            case 7:
-                obstacle_pulse_cnt=0;
-                obstacle_phase=0;
-                CURRENT_STATUS = Status_Common;
-                obstacle_flag=false;
-                obstacle_cnt++;
-                break;
-
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
         }
+        for(uint16 i=0;i<obstacle_pulse[1];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[2];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[3];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[4];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[5];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[6];i+=previous_pulseCount_1){
+            getPulseCount();
+#if CAR_TYPE
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        CURRENT_STATUS = Status_Common;
+        obstacle_flag=false;
+        obstacle_cnt++;
+//        switch (obstacle_phase)
+//        {
+//            case 0:
+//#if CAR_TYPE
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+//#else
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+//#endif
+//                if(obstacle_pulse_cnt >= obstacle_pulse[0]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=1;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 1:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[1]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=2;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 2:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[2]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=3;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 3:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[3]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=4;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 4:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[4]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=5;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 5:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[5]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=6;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 6:
+//#if CAR_TYPE
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+//#else
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+//#endif
+//                if(obstacle_pulse_cnt >= obstacle_pulse[6]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=0;
+//                    CURRENT_STATUS = Status_Common;
+//                    obstacle_flag=false;
+//                    obstacle_cnt++;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            //用于中途跳出避障状态
+//            case 7:
+//                obstacle_pulse_cnt=0;
+//                obstacle_phase=0;
+//                CURRENT_STATUS = Status_Common;
+//                obstacle_flag=false;
+//                obstacle_cnt++;
+//                break;
+//
+//        }
 #elif OBSTACLE_LEFTorRIGHT && OBSTACLE_AT_STRAIGHT
-        switch (obstacle_phase)
-        {
-            case 0:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-                if(obstacle_pulse_cnt >= obstacle_pulse[0]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=1;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 1:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_pulse_cnt >= obstacle_pulse[1]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=2;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 2:
-#if CAR_TYPE
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
-#else
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-#endif
-                if(obstacle_pulse_cnt >= obstacle_pulse[2]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=3;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 3:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_pulse_cnt >= obstacle_pulse[3]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=4;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 4:
-#if CAR_TYPE
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
-#else
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-#endif
-                if(obstacle_pulse_cnt >= obstacle_pulse[4]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=5;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 5:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                if(obstacle_pulse_cnt >= obstacle_pulse[5]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=6;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-            case 6:
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-                if(obstacle_pulse_cnt >= obstacle_pulse[6]){
-                    obstacle_pulse_cnt=0;
-                    obstacle_phase=0;
-                    CURRENT_STATUS = Status_Common;
-                    obstacle_flag=false;
-                    obstacle_cnt++;
-                }else{
-                    obstacle_pulse_cnt+=previous_pulseCount_1;
-                }
-                break;
-                //用于中途跳出避障状态
-            case 7:
-                obstacle_pulse_cnt=0;
-                obstacle_phase=0;
-                CURRENT_STATUS = Status_Common;
-                obstacle_flag=false;
-                obstacle_cnt++;
-                break;
-
+        for(uint16 i=0;i<obstacle_pulse[0];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
         }
+        for(uint16 i=0;i<obstacle_pulse[1];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[2];i+=previous_pulseCount_1){
+            getPulseCount();
+#if CAR_TYPE
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[3];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[4];i+=previous_pulseCount_1){
+            getPulseCount();
+#if CAR_TYPE
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[5];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        for(uint16 i=0;i<obstacle_pulse[6];i+=previous_pulseCount_1){
+            getPulseCount();
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+            system_delay_ms(MAIN_PIT_ms_INTERVAL);
+        }
+        CURRENT_STATUS = Status_Common;
+        obstacle_flag=false;
+        obstacle_cnt++;
+
+//        switch (obstacle_phase)
+//        {
+//            case 0:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[0]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=1;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 1:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[1]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=2;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 2:
+//#if CAR_TYPE
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+//#else
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+//#endif
+//                if(obstacle_pulse_cnt >= obstacle_pulse[2]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=3;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 3:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[3]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=4;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 4:
+//#if CAR_TYPE
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+//#else
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+//#endif
+//                if(obstacle_pulse_cnt >= obstacle_pulse[4]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=5;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 5:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[5]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=6;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//            case 6:
+//                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
+//                if(obstacle_pulse_cnt >= obstacle_pulse[6]){
+//                    obstacle_pulse_cnt=0;
+//                    obstacle_phase=0;
+//                    CURRENT_STATUS = Status_Common;
+//                    obstacle_flag=false;
+//                    obstacle_cnt++;
+//                }else{
+//                    obstacle_pulse_cnt+=previous_pulseCount_1;
+//                }
+//                break;
+//                //用于中途跳出避障状态
+//            case 7:
+//                obstacle_pulse_cnt=0;
+//                obstacle_phase=0;
+//                CURRENT_STATUS = Status_Common;
+//                obstacle_flag=false;
+//                obstacle_cnt++;
+//                break;
+//        }
+
 #elif !OBSTACLE_LEFTorRIGHT && !OBSTACLE_AT_STRAIGHT
         switch (obstacle_phase)
         {

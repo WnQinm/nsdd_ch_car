@@ -19,7 +19,7 @@
 
 
 /// 车型参数
-#define CAR_TYPE 0               // 车模类别，小车0，大车1
+#define CAR_TYPE 1               // 车模类别，小车0，大车1
 #define ENABLE_TOF true          // 启用tof传感器
 #define ENABLE_HALL true         // 启用霍尔传感器
 #define ENABLE_OUT_PROTECTION false // 启用出界保护
@@ -29,7 +29,7 @@
     #define SLOW_PULSE 15
     #define FAST_PULSE 50
 #else
-    #define NORMAL_PULSE 17
+    #define NORMAL_PULSE 25//17
     #define SLOW_PULSE 15
     #define FAST_PULSE 50
 #endif
@@ -43,10 +43,10 @@ extern float elec_Kd;
 #define OBSTACLE_LEFTorRIGHT 1      // 避障方向，0右1左
 #define OBSTACLE_AT_STRAIGHT true   // 障碍物的位置，true是放在直道，false是放在弯道
 #define LAUNCH_FORWARD 0            // 发车方向，0右1左
-#define ENABLE_LOOP true            // 开启环岛识别功能，关闭可以避开环岛保证完赛
-#define SLOPE_BEFORE_OBSTACLE true     // 坡道是否在障碍物前
-#define ENABLE_SLOPE true           // 启用坡道处理功能
+#define ENABLE_LOOP false            // 开启环岛识别功能，关闭可以避开环岛保证完赛
+#define ENABLE_SLOPE true            // 启用坡道处理功能
 #define ENABLE_OBSTACLE true        // 启用避障功能
+#define SLOPE_BEFORE_OBSTACLE false     // 坡道是否在障碍物前
 
 
 

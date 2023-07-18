@@ -25,6 +25,7 @@ uint32 circle_cnt = 5000;
 void judgement()
 {
 
+    //todo 114514
     if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && (adc_LL>cross_threshold && adc_RR>cross_threshold))
     {// ÈëÊ®×ÖÅĞ¶Ï
         cross_flag = true;

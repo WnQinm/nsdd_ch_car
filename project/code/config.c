@@ -8,8 +8,12 @@
     float elec_Kp = 10;//11.5;//15;
     float elec_Kd = 30;//25;//23.5;//23;//22;//20.5;//19.5;
 #else
-    float elec_Kp = 9;//15;
-    float elec_Kd = 7;//25;//23.5;//23;//22;//20.5;//19.5;
+//小车速度17时：
+//    float elec_Kp = 9;//15;
+//    float elec_Kd = 7;//25;//23.5;//23;//22;//20.5;//19.5;
+//小车速度25时：
+    float elec_Kp = 10;
+    float elec_Kd = 37;
 #endif
 
 /// 开环参数
@@ -27,13 +31,13 @@ uint16 stopAtStopline_pulse=1000;  //大车人行道靠边停车
 // 避障开环参数
 #if OBSTACLE_AT_STRAIGHT
     #if !CAR_TYPE&&!OBSTACLE_LEFTorRIGHT
-        long obstacle_pulse[7]={1100,2000,800,1500,600,2000,800};  //直道小车向右避障
+        long obstacle_pulse[7]={800,2000,600,1600,600,2000,800};  //直道小车向右避障
     #elif !CAR_TYPE&&OBSTACLE_LEFTorRIGHT
-        long obstacle_pulse[7]={800,2000,1100,1500,800,2000,600};  //直道小车向左避障
+        long obstacle_pulse[7]={600,2000,800,1600,800,1800,600};  //直道小车向左避障
     #elif CAR_TYPE && !OBSTACLE_LEFTorRIGHT
-        long obstacle_pulse[7]={1500,1300,900,800,1200,1300,1500};  //直道大车向右避障
+        long obstacle_pulse[7]={1500,1700,1000,800,1000,1600,1500};  //直道大车向右避障
     #elif CAR_TYPE && OBSTACLE_LEFTorRIGHT
-        long obstacle_pulse[7]={1600,1500,2000,500,1500,1300,1000};  //直道大车向左避障
+        long obstacle_pulse[7]={1000,1700,1500,800,1500,1600,1000};  //直道大车向左避障
     #endif
 #else
 #if !CAR_TYPE&&!OBSTACLE_LEFTorRIGHT
