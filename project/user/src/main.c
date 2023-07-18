@@ -67,6 +67,7 @@ uint8 slope_phase=0;
     float target_pulse[3] = {10, 20, 30};
 #endif
 #endif
+int time=0;  //启动时间，单位：ms
 
 int main (void)
 {
@@ -180,10 +181,12 @@ void ips200_show()
 
     ips200_show_string(110,40,"Distance: ");
     ips200_show_int(150,40,distance,5);
+    ips200_show_string(0,230,"Launched(s): ");
+    ips200_show_int(100,230,time,8);
 //    ips200_show_string(110,60,"Voltage: ");
 //    ips200_show_float(150,60,voltage_now,2,3);
-    ips200_show_string(0,100,"obstacle_cnt: ");
-    ips200_show_int(80,100,obstacle_cnt,2);
+//    ips200_show_string(0,100,"obstacle_cnt: ");
+//    ips200_show_int(80,100,obstacle_cnt,2);
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
@@ -226,12 +229,12 @@ void ips200_show()
     ips200_show_int(100, 90, get_pid_target(), 3);
 
 
-    // camera data
-    ips200_show_string(0, 190, "corner point:");
-    ips200_show_int(0, 210, LeftBreakpoint.end_y, 4);
-    ips200_show_int(40, 210, RightBreakpoint.end_y, 4);
-    ips200_show_int(0, 230, LeftBreakpoint.start_y, 4);
-    ips200_show_int(40, 230, RightBreakpoint.start_y, 4);
+//    // camera data
+//    ips200_show_string(0, 190, "corner point:");
+//    ips200_show_int(0, 210, LeftBreakpoint.end_y, 4);
+//    ips200_show_int(40, 210, RightBreakpoint.end_y, 4);
+//    ips200_show_int(0, 230, LeftBreakpoint.start_y, 4);
+//    ips200_show_int(40, 230, RightBreakpoint.start_y, 4);
 
 //    ips200_draw_line(0, aimLine, RESULT_COL-1, aimLine, RGB565_GREEN);
 //    ips200_show_int(0, 80, road_width[aimLine], 5);
@@ -290,10 +293,10 @@ void elec_handler()
         }
     }
 
+    // 红外障碍物判断，100ms一次
     #if ENABLE_TOF
     if (!obstacle_flag && elec_handler_cnt % Delay_cnt_calc(50) == 0)
     {
-        // 红外避障判断，100ms一次
         // 红外测距对不同的颜色的障碍物敏感度不同,对红色障碍物测量值偏大，对蓝色障碍物测量值偏小
         distance = Get_Distance();
 //        printf("Dis: %d",distance);
@@ -308,7 +311,7 @@ void elec_handler()
     }
     #endif
 
-    //霍尔停车
+    //霍尔停车检测，10ms一次
     #if ENABLE_HALL
     if(elec_handler_cnt % Delay_cnt_calc(10) == 0){
         in_garage_flag=isStopLine();
@@ -725,6 +728,7 @@ void elec_handler()
         }
 #endif
     }
+
 #if ENABLE_SLOPE
     // 坡道处理程序
     #if SLOPE_BEFORE_OBSTACLE
@@ -780,7 +784,9 @@ void elec_handler()
         }
     }
 #endif
+
     // 避障处理程序
+#if ENABLE_OBSTACLE
     #if SLOPE_BEFORE_OBSTACLE
     else if(elec_handler_cnt%Delay_cnt_calc(5)==0 && obstacle_flag && obstacle_cnt==1)
     #else
@@ -1057,6 +1063,9 @@ void elec_handler()
         }
 #endif
     }
+#endif
+
+    // 入库处理程序
     else if(in_garage_flag)
     {
 #if !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
@@ -1066,15 +1075,13 @@ void elec_handler()
 #endif
     }
 
-
-
+    // 重置计数器
     if (elec_handler_cnt == Delay_cnt_calc(5000)) {
         elec_handler_cnt = 0;
     }else{
         elec_handler_cnt++;
     }
-
-
+    time++;
 
 }
 
@@ -1092,5 +1099,3 @@ void img_handler()
 
     ips200_show();
 }
-
-void

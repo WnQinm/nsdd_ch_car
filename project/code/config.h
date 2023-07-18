@@ -15,14 +15,13 @@
 #define SERVO_DEBUG_STATUS false    // 舵机调试pid模式开关，0关1开，打开调试模式必须接入蓝牙模块
 #define PERSPECTIVE_DEBUG_STATUS false // 逆透视参数标定模式开关
 #define ANGLE_90_MODE false      // 舵机始终中值
-#define ENABLE_SLOPE true        // 启用坡道处理
 
 
 
 /// 车型参数
 #define CAR_TYPE 0               // 车模类别，小车0，大车1
-#define ENABLE_TOF true          // 启用tof避障
-#define ENABLE_HALL true         // 启用霍尔入库检测
+#define ENABLE_TOF true          // 启用tof传感器
+#define ENABLE_HALL true         // 启用霍尔传感器
 #define ENABLE_OUT_PROTECTION false // 启用出界保护
 // 车模速度的稳定速度
 #if CAR_TYPE
@@ -46,6 +45,8 @@ extern float elec_Kd;
 #define LAUNCH_FORWARD 0            // 发车方向，0右1左
 #define ENABLE_LOOP true            // 开启环岛识别功能，关闭可以避开环岛保证完赛
 #define SLOPE_BEFORE_OBSTACLE true     // 坡道是否在障碍物前
+#define ENABLE_SLOPE true           // 启用坡道处理功能
+#define ENABLE_OBSTACLE true        // 启用避障功能
 
 
 
