@@ -26,7 +26,7 @@ void wait_for_charge(){
     ips200_show_string(0, 0, "wait for charge to start...");
 //    uint8 cnt=0;
     bool key=false;
-    while(voltage_now<=12 && !key){
+    while(voltage_now<=12.5 && !key){
         float voltage=Get_Battery_Voltage();
         ips200_show_string(0,20,"Voltage");
         ips200_show_float(70,20,voltage,3,3);
@@ -52,7 +52,7 @@ void wait_for_charge(){
     ips200_show_string(0, 20, "running out...");
     //撞击
     motor_control(1500,1500);
-    system_delay_ms(3000);
+    system_delay_ms(1000);
     motor_control(0,0);
     system_delay_ms(5000);
     out_garage_flag=true;
@@ -67,6 +67,8 @@ void wait_for_launch(){
 //        printf("%d\n",previous_pulseCount_1);
         system_delay_ms(50);
     }while(previous_pulseCount_1<=10);
+    motor_control(1500,1500);
+    system_delay_ms(50);
 }
 
 void out_garage()
@@ -86,26 +88,26 @@ void out_garage()
                 for(uint16 i=0;i<outgarage_pulse[0];i+=previous_pulseCount_1){
                     getPulseCount();
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                    motor_control(1200,1200);
+                    motor_control(1500,1500);
                     system_delay_ms(MAIN_PIT_ms_INTERVAL);
                 }
                 //右转
                 for(uint16 i=0;i<outgarage_pulse[1];i+=previous_pulseCount_1){
                     getPulseCount();
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-                    motor_control(1200,1200);
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+                    motor_control(1700,1700);
                     system_delay_ms(MAIN_PIT_ms_INTERVAL);
                 }
                 //停止
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                motor_control(0,0);
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(92.5));
+                motor_control(-1000,-1000);
                 system_delay_ms(300);
                 getPulseCount();
                 //后退，接近小车
                 for(uint16 i=0;i<outgarage_pulse[2];i+=previous_pulseCount_1){
                     getPulseCount();
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                    motor_control(-1000,-1000);
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(93));
+                    motor_control(-1500,-1500);
                     system_delay_ms(MAIN_PIT_ms_INTERVAL);
                 }
 #else
@@ -113,32 +115,35 @@ void out_garage()
                 for(uint16 i=0;i<outgarage_pulse[0];i+=previous_pulseCount_1){
                     getPulseCount();
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                    motor_control(1200,1200);
+                    motor_control(1500,1500);
                     system_delay_ms(MAIN_PIT_ms_INTERVAL);
                 }
                 //左转
                 for(uint16 i=0;i<outgarage_pulse[1];i+=previous_pulseCount_1){
                     getPulseCount();
                     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(105));
-                    motor_control(1200,1200);
+                    motor_control(1700,1700);
                     system_delay_ms(MAIN_PIT_ms_INTERVAL);
                 }
                 //停止
-                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                motor_control(0,0);
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(92.5));
+                motor_control(-1000,-1000);
                 system_delay_ms(300);
                 getPulseCount();
                 //后退，接近小车
                 for(uint16 i=0;i<outgarage_pulse[2];i+=previous_pulseCount_1){
                     getPulseCount();
-                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-                    motor_control(-1000,-1000);
+                    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(93));
+                    motor_control(-1500,-1500);
                     system_delay_ms(MAIN_PIT_ms_INTERVAL);
                 }
 #endif
                 //停止，等待充电
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+                motor_control(1000,1000);
+                system_delay_ms(500);
                 motor_control(0,0);
+                system_delay_ms(1000);
                 out_garage_flag = true;
                 break;
             default:
@@ -190,6 +195,8 @@ void Stop_At_Stopline(){
     }
     //停止，停车完成
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+    motor_control(-1000,-1000);
+    system_delay_ms(300);
     motor_control(0,0);
     ips200_clear();
     ips200_show_string(0,0,"Finished!");

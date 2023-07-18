@@ -103,15 +103,15 @@ int main (void)
     PID_param_init();
     // 1m/s 54pulse/5ms
 
-//#if CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-//    out_garage();
-//    system_delay_ms(3000);
-//    wait_for_launch();
-//#elif !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-//    ADC_Battery_init();
-//    wait_for_charge();
-//    ADC_DeInit(ADC2);
-//#endif
+#if CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+    out_garage();
+    system_delay_ms(3000);
+    wait_for_launch();
+#elif !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+    ADC_Battery_init();
+    wait_for_charge();
+    ADC_DeInit(ADC2);
+#endif
 
     ADC_init();
     Main_pit_init();
@@ -178,12 +178,12 @@ void ips200_show()
     ips200_show_string(110, 0, "Angle:");
     ips200_show_float(110, 20, Angle, 5, 2);
 
-//    ips200_show_string(110,40,"Distance: ");
-//    ips200_show_int(150,40,distance,5);
+    ips200_show_string(110,40,"Distance: ");
+    ips200_show_int(150,40,distance,5);
 //    ips200_show_string(110,60,"Voltage: ");
 //    ips200_show_float(150,60,voltage_now,2,3);
-//    ips200_show_string(0,100,"obstacle_cnt: ");
-//    ips200_show_int(80,100,obstacle_cnt,2);
+    ips200_show_string(0,100,"obstacle_cnt: ");
+    ips200_show_int(80,100,obstacle_cnt,2);
     ips200_show_string(0, 150, "elec ADC value:");
     ips200_show_int(0, 170, adc_LL, 5);
     ips200_show_int(40, 170, adc_L, 5);
@@ -260,30 +260,36 @@ void elec_handler()
     // 电机pid，5ms一次
     if(elec_handler_cnt%Delay_cnt_calc(5)==0)
     {
-        getPulseCount();
+        if(CURRENT_MOTOR_STATUS==Status_Common){
+            getPulseCount();
 
-//#if MOTOR_DEBUG_STATUS
-//        virtual_oscilloscope_data_conversion(pulseCount_1,pulseCount_2,motorPWML,motorPWMR);
-////        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
-//        bluetooth_ch9141_send_buff(virtual_oscilloscope_data, 10);
-//#endif
+    //#if MOTOR_DEBUG_STATUS
+    //        virtual_oscilloscope_data_conversion(pulseCount_1,pulseCount_2,motorPWML,motorPWMR);
+    ////        uart_write_buffer(UART_3, virtual_oscilloscope_data, 10);
+    //        bluetooth_ch9141_send_buff(virtual_oscilloscope_data, 10);
+    //#endif
 
-        motorPWML += PID_realize(0, pulseCount_1);
-        motorPWMR += PID_realize(1, pulseCount_2);
+#if CAR_TYPE
+            motorPWML += PID_realize(0, pulseCount_1);
+            motorPWMR += PID_realize(1, pulseCount_2);
+#else
+            motorPWML += PID_realize(0, pulseCount_1)*10;
+            motorPWMR += PID_realize(1, pulseCount_2)*10;
+#endif
 
-        if(motorPWML>2000)
-            motorPWML=2000;
-        if(motorPWMR>2000)
-            motorPWMR=2000;
-        if(motorPWML<-2000)
-            motorPWML=-2000;
-        if(motorPWMR<-2000)
-            motorPWMR=-2000;
+            if(motorPWML>2000)
+                motorPWML=2000;
+            if(motorPWMR>2000)
+                motorPWMR=2000;
+            if(motorPWML<-2000)
+                motorPWML=-2000;
+            if(motorPWMR<-2000)
+                motorPWMR=-2000;
 
-        motor_control(motorPWML, motorPWMR);
+            motor_control(motorPWML, motorPWMR);
+        }
     }
 
-#if !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
     #if ENABLE_TOF
     if (!obstacle_flag && elec_handler_cnt % Delay_cnt_calc(50) == 0)
     {
@@ -293,7 +299,7 @@ void elec_handler()
 //        printf("Dis: %d",distance);
         ips200_show_string(0,0,"distance: ");
         ips200_show_int(50,0,distance,5);
-        if (100<=distance && distance <= OBSTACLE_DIS)
+        if (300<=distance && distance <= OBSTACLE_DIS)
         {
 //            printf("Obstacle!");
             obstacle_flag=true;
@@ -315,7 +321,6 @@ void elec_handler()
         }
     }
     #endif
-#endif
 
     // 电机、舵机调试处理程序，500ms一次
 #if MOTOR_DEBUG_STATUS
@@ -729,12 +734,16 @@ void elec_handler()
     #endif
     {
         CURRENT_STATUS=Status_Common;
+        CURRENT_MOTOR_STATUS=Status_Stop;
         ips200_show_string(0,200,"Slope!");
         switch (slope_phase) {
             case 0:
                 if(slope_cnt<Delay_cnt_calc(500)){
+#if CAR_TYPE
+                    motor_control(2700,2700);
+#else
                     motor_control(3500,3500);
-                    set_pid_target(FAST_PULSE);
+#endif
                     slope_cnt++;
                 }else{
                     slope_cnt=0;
@@ -742,25 +751,30 @@ void elec_handler()
                 }
                 break;
             case 1:
+#if CAR_TYPE
+                if(slope_cnt<Delay_cnt_calc(1000)){
+#else
                 if(slope_cnt<Delay_cnt_calc(200)){
+#endif
                     motor_control(0,0);
 //                    set_pid_target(SLOW_PULSE);
                     slope_cnt++;
                 }else {
                     slope_cnt=0;
                     slope_phase=2;
+                    motor_control(1200,1200);
+                    CURRENT_MOTOR_STATUS=Status_Common;
                 }
                 break;
             case 2:
                 if(slope_cnt<Delay_cnt_calc(1000)){
-                    set_pid_target(NORMAL_PULSE);
                     slope_cnt++;
                 }else {
                     slope_cnt=0;
                     slope_phase=0;
                     ips200_clear();
                     obstacle_flag=false;
-                    obstacle_cnt=1;
+                    obstacle_cnt++;
                 }
                 break;
         }
@@ -779,7 +793,11 @@ void elec_handler()
         switch (obstacle_phase)
         {
             case 0:
+#if CAR_TYPE
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
                 if(obstacle_pulse_cnt >= obstacle_pulse[0]){
                     obstacle_pulse_cnt=0;
                     obstacle_phase=1;
@@ -833,7 +851,11 @@ void elec_handler()
                 }
                 break;
             case 6:
+#if CAR_TYPE
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
                 if(obstacle_pulse_cnt >= obstacle_pulse[6]){
                     obstacle_pulse_cnt=0;
                     obstacle_phase=0;
@@ -876,7 +898,11 @@ void elec_handler()
                 }
                 break;
             case 2:
+#if CAR_TYPE
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
                 if(obstacle_pulse_cnt >= obstacle_pulse[2]){
                     obstacle_pulse_cnt=0;
                     obstacle_phase=3;
@@ -894,7 +920,11 @@ void elec_handler()
                 }
                 break;
             case 4:
+#if CAR_TYPE
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
                 if(obstacle_pulse_cnt >= obstacle_pulse[4]){
                     obstacle_pulse_cnt=0;
                     obstacle_phase=5;
@@ -937,7 +967,11 @@ void elec_handler()
         switch (obstacle_phase)
         {
             case 0:
+#if CAR_TYPE
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
                 if(obstacle_pulse_cnt >= obstacle_pulse[0]){
                     obstacle_pulse_cnt=0;
                     obstacle_phase=1;
@@ -955,7 +989,11 @@ void elec_handler()
                 }
                 break;
             case 2:
+#if CAR_TYPE
+                pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
+#else
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+#endif
                 if(obstacle_pulse_cnt >= obstacle_pulse[2]){
                     obstacle_pulse_cnt=0;
                     obstacle_phase=0;
@@ -1054,3 +1092,5 @@ void img_handler()
 
     ips200_show();
 }
+
+void

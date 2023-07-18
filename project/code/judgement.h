@@ -32,6 +32,7 @@ typedef enum
 void judgement();
 
 extern RaceStatus CURRENT_STATUS;
+extern RaceStatus CURRENT_MOTOR_STATUS;
 
 extern uint8 out_garage_flag, in_garage_flag;
 extern uint8 left_circle_flag, right_circle_flag, cross_flag, obstacle_flag, front_diuxian_flag, slope_flag;

@@ -20,12 +20,13 @@
 
 
 /// 车型参数
-#define CAR_TYPE 1               // 车模类别，小车0，大车1
-#define ENABLE_TOF false          // 启用tof避障
-#define ENABLE_HALL false         // 启用霍尔入库检测
+#define CAR_TYPE 0               // 车模类别，小车0，大车1
+#define ENABLE_TOF true          // 启用tof避障
+#define ENABLE_HALL true         // 启用霍尔入库检测
+#define ENABLE_OUT_PROTECTION false // 启用出界保护
 // 车模速度的稳定速度
 #if CAR_TYPE
-    #define NORMAL_PULSE 23
+    #define NORMAL_PULSE 18
     #define SLOW_PULSE 15
     #define FAST_PULSE 50
 #else

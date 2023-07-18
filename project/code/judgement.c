@@ -7,6 +7,7 @@
 #include "judgement.h"
 
 RaceStatus CURRENT_STATUS = Status_Common;
+RaceStatus CURRENT_MOTOR_STATUS = Status_Common;
 
 uint8 out_garage_flag = false, in_garage_flag = false;
 uint8 left_circle_flag=false, right_circle_flag=false, cross_flag=false, obstacle_flag=false, front_diuxian_flag=false, slope_flag=false;

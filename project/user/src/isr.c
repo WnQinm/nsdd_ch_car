@@ -328,7 +328,7 @@ void TIM6_IRQHandler(void)
     if(TIM_GetITStatus(TIM6, TIM_IT_Update) != RESET)
     {
        TIM_ClearITPendingBit(TIM6, TIM_IT_Update );
-
+#if ENABLE_OUT_PROTECTION
        if(out_flag && !obstacle_flag)
        {
            Read_ADC();
@@ -340,6 +340,7 @@ void TIM6_IRQHandler(void)
 //           while(1) motor_control(0, 0);
 //       }
        else
+#endif
            elec_handler();
 
        servo_control(CURRENT_STATUS);
