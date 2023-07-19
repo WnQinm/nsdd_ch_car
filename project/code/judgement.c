@@ -12,7 +12,7 @@ RaceStatus CURRENT_MOTOR_STATUS = Status_Common;
 uint8 out_garage_flag = false, in_garage_flag = false;
 uint8 left_circle_flag=false, right_circle_flag=false, cross_flag=false, obstacle_flag=false, front_diuxian_flag=false, slope_flag=false;
 #if CAR_TYPE
-uint8 circle_threshold=60, cross_threshold=60;
+uint8 circle_threshold=30, cross_threshold=80;
 #else
 uint8 circle_threshold=70, cross_threshold=70;
 #endif
@@ -26,24 +26,24 @@ void judgement()
 {
 
     //todo 114514
-    if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && (adc_LL>cross_threshold && adc_RR>cross_threshold))
+    if(!obstacle_flag && !in_garage_flag && !cross_flag && cross_cnt>=CROSS_DELAY_TIME && (adc_LL>cross_threshold && adc_RR>cross_threshold))
     {// »Î Æ◊÷≈–∂œ
         cross_flag = true;
         cross_cnt%=CROSS_DELAY_TIME;
     }
-    else if(cross_flag && cross_cnt>=CROSS_DELAY_TIME && (adc_LL>cross_threshold && adc_RR>cross_threshold))
+    else if(!obstacle_flag && !in_garage_flag && cross_flag && cross_cnt>=CROSS_DELAY_TIME && (adc_LL>cross_threshold && adc_RR>cross_threshold))
     {// ≥ˆ Æ◊÷≈–∂œ
         cross_flag = false;
         cross_cnt%=CROSS_DELAY_TIME;
     }
 #if ENABLE_LOOP
-    else if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && circle_cnt>=Circle_Delay_time && Angle<91 && adc_LL>circle_threshold && adc_RR<circle_threshold)
+    else if(!obstacle_flag && !in_garage_flag && !cross_flag && cross_cnt>=CROSS_DELAY_TIME && circle_cnt>=Circle_Delay_time && Angle<91 && adc_LL>circle_threshold && adc_RR<circle_threshold)
     {// ◊Ûª∑µ∫≈–∂œ
         left_circle_flag = true;
         circle_status = 1;
         cross_cnt = 0;
     }
-    else if(!cross_flag && cross_cnt>=CROSS_DELAY_TIME && circle_cnt>=Circle_Delay_time && Angle>89 && adc_LL<circle_threshold && adc_RR>circle_threshold)
+    else if(!obstacle_flag && !in_garage_flag && !cross_flag && cross_cnt>=CROSS_DELAY_TIME && circle_cnt>=Circle_Delay_time && Angle>89 && adc_LL<circle_threshold && adc_RR>circle_threshold)
     {// ”“ª∑µ∫≈–∂œ
         right_circle_flag = true;
         circle_status = 1;

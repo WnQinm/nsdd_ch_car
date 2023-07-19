@@ -43,7 +43,7 @@ extern float elec_Kd;
 #define OBSTACLE_LEFTorRIGHT 1      // 避障方向，0右1左
 #define OBSTACLE_AT_STRAIGHT true   // 障碍物的位置，true是放在直道，false是放在弯道
 #define LAUNCH_FORWARD 0            // 发车方向，0右1左
-#define ENABLE_LOOP false            // 开启环岛识别功能，关闭可以避开环岛保证完赛
+#define ENABLE_LOOP true            // 开启环岛识别功能，关闭可以避开环岛保证完赛
 #define ENABLE_SLOPE true            // 启用坡道处理功能
 #define ENABLE_OBSTACLE true        // 启用避障功能
 #define SLOPE_BEFORE_OBSTACLE false     // 坡道是否在障碍物前

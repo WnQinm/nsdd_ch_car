@@ -73,7 +73,7 @@ void servo_control(RaceStatus status)
 
 void elec_pid(float current_err)
 {
-    float output = elec_Kp * (current_err + elec_Kd * (current_err - last_err_elec))/100;
+    float output = (elec_Kp * current_err + elec_Kd * (current_err - last_err_elec))/100;
     last_err_elec = current_err;
     Angle=90+output;// 这应该是Angle+=output但是架不住那样效果好
 }
