@@ -21,7 +21,7 @@
 #if CAR_TYPE
 #define SERVO_MOTOR_DUTY(x)    ((float)PWM_DUTY_MAX / (1000.0 / (float)SERVO_MOTOR_FREQ) * (0.5 + (float)(x) / 90.0))
 #else
-#define SERVO_MOTOR_DUTY(x)    ((float)PWM_DUTY_MAX / (1000.0 / (float)SERVO_MOTOR_FREQ) * (0.45 + (float)(x) / 90.0))
+#define SERVO_MOTOR_DUTY(x)    ((float)PWM_DUTY_MAX / (1000.0 / (float)SERVO_MOTOR_FREQ) * (0.41 + (float)(x) / 90.0))
 #endif
 
 // 定义车模寻迹舵机引脚

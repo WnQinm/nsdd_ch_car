@@ -335,10 +335,6 @@ void TIM6_IRQHandler(void)
            CURRENT_STATUS = Status_Stop;
            motor_control(0, 0);
        }
-//       else if(!judgeStopline())
-//       {
-//           while(1) motor_control(0, 0);
-//       }
        else
 #endif
            elec_handler();

@@ -1,1 +1,3 @@
 /project/mrs/*
+.idea/*
+CMakeLists.txt
