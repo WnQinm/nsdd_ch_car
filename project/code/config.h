@@ -25,7 +25,7 @@
 #define ENABLE_OUT_PROTECTION false // 启用出界保护
 // 车模速度的稳定速度
 #if CAR_TYPE
-    #define NORMAL_PULSE 25
+    #define NORMAL_PULSE 20
     #define SLOW_PULSE 15
     #define FAST_PULSE 50
 #else
@@ -48,7 +48,8 @@ extern float elec_Kd;
 #define ENABLE_OBSTACLE true        // 启用避障功能
 
 // 应试教育
-extern uint8 yuansu_cnt[10];
+extern uint8 yuansu_cnt;
+extern uint8 yuansu_cnt_enum[10];
 #define SLOPE_BEFORE_OBSTACLE true     // 坡道是否在障碍物前
 
 
@@ -66,5 +67,8 @@ extern uint16 stopAtStopline_pulse;
     long obstacle_pulse[3];
 #endif
 
+// 环岛开环参数
+extern uint16 Lcircle_param[4];
+extern uint16 Rcircle_param[4];
 
 #endif /* CONFIG_H_ */

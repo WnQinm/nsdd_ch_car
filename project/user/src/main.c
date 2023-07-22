@@ -49,7 +49,6 @@ void ips200_show();
 uint16 distance=0;
 long obstacle_pulse_cnt=0;
 uint8 obstacle_phase=0;
-uint8 obstacle_cnt=0;
 //uint16 obstacle_delay[7]={180,600,200,300,200,600,180};
 
 // 环岛用
@@ -104,15 +103,15 @@ int main (void)
     PID_param_init();
     // 1m/s 54pulse/5ms
 
-//#if CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-//    out_garage();
-//    system_delay_ms(3000);
-//    wait_for_launch();
-//#elif !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
-//    ADC_Battery_init();
-//    wait_for_charge();
-//    ADC_DeInit(ADC2);
-//#endif
+#if CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+    out_garage();
+    system_delay_ms(3000);
+    wait_for_launch();
+#elif !CAR_TYPE && !MOTOR_DEBUG_STATUS && !SERVO_DEBUG_STATUS
+    ADC_Battery_init();
+    wait_for_charge();
+    ADC_DeInit(ADC2);
+#endif
 
     ADC_init();
 #if CAR_TYPE
@@ -404,13 +403,7 @@ void elec_handler()
 
 
 
-// 入环直行距离 进环打角距离 出环打角距离 出环后开环直行距离
-#if CAR_TYPE
-//    uint16 circle_param[4] = {0,0,0,0};
-#else
-    uint16 Lcircle_param[4] = {2500,1800,3000,1000};
-    uint16 Rcircle_param[4] = {3200,1300,3000,1000};
-#endif
+
 
 
 
@@ -434,7 +427,7 @@ void elec_handler()
                 CURRENT_STATUS = Status_Common;
                 if(!get_pulse_sum_flag)
                     get_pulse_sum_flag = true;
-                if(pulsesum>=2700)//todo 待测试
+                if(pulsesum>=Lcircle_param[0])
                 {
                     circle_status++;
                     pulsesum = 0;
@@ -459,7 +452,7 @@ void elec_handler()
             case 2:// step2 第二个断口入环，强行扭头入环
                 CURRENT_STATUS = Status_Stop;
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(102));
-                if(pulsesum>=1700)
+                if(pulsesum>=Lcircle_param[1])
                 {
                     circle_status++;
                     pulsesum=0;
@@ -479,7 +472,7 @@ void elec_handler()
             case 4:// step4 出环
                 CURRENT_STATUS = Status_Stop;
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(tmp_angle));
-                if(pulsesum>=2000)//++cnt>Delay_cnt_calc(500))
+                if(pulsesum>=Lcircle_param[2])
                 {
                     circle_status++;
                     pulsesum=0;
@@ -487,7 +480,7 @@ void elec_handler()
                 break;
             case 5:// step5 出环后
                 CURRENT_STATUS = Status_Common;
-                if(pulsesum>=2000)//++cnt>Delay_cnt_calc(500))
+                if(pulsesum>=Lcircle_param[3])
                 {
                     circle_status = 0;
                     cross_cnt = 0;
@@ -495,6 +488,7 @@ void elec_handler()
                     pulsesum = 0;
                     get_pulse_sum_flag = false;
                     circle_cnt = 0;
+                    yuansu_cnt++;
                 }
                 break;
         }
@@ -507,7 +501,7 @@ void elec_handler()
                 CURRENT_STATUS = Status_Common;
                 if(!get_pulse_sum_flag)
                     get_pulse_sum_flag = true;
-                if(pulsesum>=3500)//todo 待测试
+                if(pulsesum>=Rcircle_param[0])
                 {
                     circle_status++;
                     pulsesum = 0;
@@ -531,7 +525,7 @@ void elec_handler()
             case 2:// step2 第二个断口入环，强行扭头入环
                 CURRENT_STATUS = Status_Stop;
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(82));
-                if(pulsesum>=1600)
+                if(pulsesum>=Rcircle_param[1])
                 {
                     circle_status++;
                     pulsesum=0;
@@ -551,7 +545,7 @@ void elec_handler()
             case 4:// step4 出环
                 CURRENT_STATUS = Status_Stop;
                 pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(tmp_angle));
-                if(pulsesum>=2000)//++cnt>Delay_cnt_calc(500))
+                if(pulsesum>=Rcircle_param[2])
                 {
                     circle_status++;
                     pulsesum=0;
@@ -559,7 +553,7 @@ void elec_handler()
                 break;
             case 5:// step5 出环后
                 CURRENT_STATUS = Status_Common;
-                if(pulsesum>=2000)//++cnt>Delay_cnt_calc(500))
+                if(pulsesum>=Rcircle_param[3])
                 {
                     circle_status = 0;
                     cross_cnt = 0;
@@ -567,6 +561,7 @@ void elec_handler()
                     pulsesum = 0;
                     get_pulse_sum_flag = false;
                     circle_cnt = 0;
+                    yuansu_cnt++;
                 }
                 break;
         }
@@ -643,6 +638,7 @@ void elec_handler()
                     pulsesum = 0;
                     get_pulse_sum_flag = false;
                     circle_cnt = 0;
+                    yuansu_cnt++;
                 }
                 break;
         }
@@ -719,6 +715,7 @@ void elec_handler()
                     pulsesum = 0;
                     get_pulse_sum_flag = false;
                     circle_cnt = 0;
+                    yuansu_cnt++;
                 }
                 break;
         }
@@ -728,11 +725,12 @@ void elec_handler()
 
     // 坡道处理程序
 #if ENABLE_SLOPE
-    #if SLOPE_BEFORE_OBSTACLE
-    else if(obstacle_flag && obstacle_cnt==0)
-    #else
-    else if(obstacle_flag && obstacle_cnt==1)
-    #endif
+//    #if SLOPE_BEFORE_OBSTACLE
+//    else if(obstacle_flag && obstacle_cnt==0)
+//    #else
+//    else if(obstacle_flag && obstacle_cnt==1)
+//    #endif
+    else if(obstacle_flag && yuansu_cnt==yuansu_cnt_enum[0])
     {
         CURRENT_STATUS=Status_Common;
 //        ips200_show_string(0,200,"Slope!");
@@ -782,7 +780,8 @@ void elec_handler()
                     slope_phase=0;
                     ips200_clear();
                     obstacle_flag=false;
-                    obstacle_cnt++;
+//                    obstacle_cnt++;
+                    yuansu_cnt++;
                     CURRENT_MOTOR_STATUS=Status_Common;
                 }
                 break;
@@ -792,11 +791,12 @@ void elec_handler()
 
     // 避障处理程序
 #if ENABLE_OBSTACLE
-    #if SLOPE_BEFORE_OBSTACLE
-    else if(obstacle_flag && obstacle_cnt==1)
-    #else
-    else if(obstacle_flag && obstacle_cnt==0)
-    #endif
+//    #if SLOPE_BEFORE_OBSTACLE
+//    else if(obstacle_flag && obstacle_cnt==1)
+//    #else
+//    else if(obstacle_flag && obstacle_cnt==0)
+//    #endif
+    else if(obstacle_flag && yuansu_cnt == yuansu_cnt_enum[1])
     {
 //        printf("%d\n",obstacle_phase);
         CURRENT_STATUS = Status_Stop;
@@ -864,10 +864,12 @@ void elec_handler()
 #if CAR_TYPE
             pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
 #else
-            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
 #endif
             system_delay_ms(10);
         }
+//        pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+//        system_delay_ms(100000);
         for(uint16 i=0;i<obstacle_pulse[3];i+=previous_pulseCount_1){
             getPulseCount();
             pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
@@ -878,7 +880,7 @@ void elec_handler()
 #if CAR_TYPE
             pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
 #else
-            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
+            pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(80));
 #endif
             system_delay_ms(10);
         }
@@ -894,7 +896,8 @@ void elec_handler()
         }
         CURRENT_STATUS = Status_Common;
         obstacle_flag=false;
-        obstacle_cnt++;
+//        obstacle_cnt++;
+        yuansu_cnt++;
         cross_cnt=0;
 
 #elif !OBSTACLE_LEFTorRIGHT && !OBSTACLE_AT_STRAIGHT

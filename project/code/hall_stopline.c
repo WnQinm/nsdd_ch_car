@@ -189,12 +189,12 @@ void Stop_At_Stopline(){
     //检测到停止线，需要向前继续走一段
     for(uint16 i=0;i<stopAtStopline_pulse;i+=previous_pulseCount_1){
         getPulseCount();
-        pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+        pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(92));
         motor_control(1200,1200);
         system_delay_ms(1);
     }
     //停止，停车完成
-    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
+    pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(92));
     motor_control(-1000,-1000);
     system_delay_ms(300);
     motor_control(0,0);
@@ -225,7 +225,7 @@ void In_Garage_with_Hall()
     for(uint16 i=0;i<In_Garage_with_Hall_pulse[2];i+=previous_pulseCount_1){
         getPulseCount();
         pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(75));
-        motor_control(-1200,-1200);
+        motor_control(-1500,-1500);
         system_delay_ms(1);
     }
     ips200_show_string(0,60,"P3 Finished!");
@@ -233,7 +233,7 @@ void In_Garage_with_Hall()
     for(uint16 i=0;i<In_Garage_with_Hall_pulse[3];i+=previous_pulseCount_1){
         getPulseCount();
         pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
-        motor_control(-1200,-1200);
+        motor_control(-1500,-1500);
         system_delay_ms(1);
     }
     ips200_show_string(0,80,"P4 Finished!");

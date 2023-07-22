@@ -61,7 +61,11 @@ void servo_control(RaceStatus status)
     }
 
     // ╫г╤хоч╥Ы
+#if CAR_TYPE
+    if(Angle<80) Angle=80;
+#else
     if(Angle<75) Angle=75;
+#endif
     if(Angle>105) Angle=105;
 #if ANGLE_90_MODE
     pwm_set_duty(SERVO_PIN, SERVO_MOTOR_DUTY(90));
