@@ -8,13 +8,13 @@
     float elec_Kp = 17;//10.5;//15;
     float elec_Kd = 0;//0.2;//25;//23.5;//23;//22;//20.5;//19.5;
 #else
-    float elec_Kp = 10;
-    float elec_Kd = 20;
+    float elec_Kp = 11.5;
+    float elec_Kd = 0;
 #endif
 
 // 应试教育(坡道 避障 左环岛 右环岛) 没有就0
     uint8 yuansu_cnt=1;
-    uint8 yuansu_cnt_enum[10] = {1, 2, 0, 0};
+    uint8 yuansu_cnt_enum[10] = {1, 0, 0, 0};
 
 /// 开环参数
 // 出入库开环参数

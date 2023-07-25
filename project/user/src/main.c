@@ -739,10 +739,10 @@ void elec_handler()
             case 0:
 
 #if CAR_TYPE
-                if(slope_cnt<Delay_cnt_calc(800)){
+                if(slope_cnt<Delay_cnt_calc(1000)){
                     motor_control(2700,2700);
 #else
-                if(slope_cnt<Delay_cnt_calc(800)){
+                if(slope_cnt<Delay_cnt_calc(1000)){
                     motor_control(3500,3500);
 #endif
                     CURRENT_MOTOR_STATUS=Status_Stop;
@@ -754,10 +754,10 @@ void elec_handler()
                 break;
             case 1:
 #if CAR_TYPE
-                if(slope_cnt<Delay_cnt_calc(1000))
+                if(slope_cnt<Delay_cnt_calc(800))
                 {
 #else
-                if(slope_cnt<Delay_cnt_calc(200))
+                if(slope_cnt<Delay_cnt_calc(100))
                 {
 #endif
                     motor_control(0,0);
@@ -773,7 +773,7 @@ void elec_handler()
                 }
                 break;
             case 2:
-                if(slope_cnt<Delay_cnt_calc(1000)){
+                if(slope_cnt<Delay_cnt_calc(2000)){
                     slope_cnt++;
                 }else {
                     slope_cnt=0;
